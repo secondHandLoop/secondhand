@@ -1,0 +1,9 @@
+-- ./db/init/01_schemas.sql
+CREATE SCHEMA IF NOT EXISTS user_svc AUTHORIZATION postgres;
+CREATE SCHEMA IF NOT EXISTS note_svc AUTHORIZATION postgres;
+CREATE SCHEMA IF NOT EXISTS message_svc AUTHORIZATION postgres;
+CREATE SCHEMA IF NOT EXISTS promotion_svc AUTHORIZATION postgres;
+
+-- (Optional) useful extensions
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+CREATE EXTENSION IF NOT EXISTS pg_trgm;

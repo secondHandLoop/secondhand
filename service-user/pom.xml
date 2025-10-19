@@ -12,7 +12,7 @@
     <dependencies>
         <dependency>
             <groupId>com.secondhand</groupId>
-            <artifactId>common</artifactId>
+            <artifactId>service-common</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>
@@ -36,7 +36,6 @@
             <groupId>org.springframework.security</groupId>
             <artifactId>spring-security-crypto</artifactId>
         </dependency>
-
     </dependencies>
 
     <build>
@@ -45,6 +44,25 @@
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
             </plugin>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <version>3.3.0</version>
+                <executions>
+                    <execution>
+                        <id>doc-user</id>
+                        <phase>package</phase> <!-- or verify -->
+                        <goals><goal>java</goal></goals>
+                        <configuration>
+                            <mainClass>com.secondhand.user.utils.DocBuilder</mainClass>
+                            <classpathScope>runtime</classpathScope>
+                            <includeProjectDependencies>true</includeProjectDependencies>
+                            <cleanupDaemonThreads>false</cleanupDaemonThreads>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
         </plugins>
     </build>
 </project>

@@ -1,0 +1,33 @@
+version: "3.9"
+
+services:
+  postgres:
+    image: postgres:16
+    container_name: pg-secondhand
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: secondhand
+    ports:
+      - "5432:5432"           # same port all services will use
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+      - ./db/init:/docker-entrypoint-initdb.d  # runs *.sql on first boot
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d secondhand"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  adminer:
+    image: adminer:4
+    container_name: adminer
+    restart: unless-stopped
+    ports:
+      - "8088:8080"
+    depends_on:
+      - postgres
+
+volumes:
+  pg_data:

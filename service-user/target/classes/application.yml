@@ -1,0 +1,18 @@
+server:
+  port: 8081
+
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/secondhand?currentSchema=user_svc
+    username: postgres
+    password: postgres
+  jpa:
+    hibernate:
+      ddl-auto: update        # dev only; use Flyway in prod
+    properties:
+      hibernate.format_sql: true
+      hibernate.jdbc.time_zone: UTC
+  flyway:
+    enabled: false            # set true when you add migrations
+    default-schema: user_svc
+    schemas: user_svc
