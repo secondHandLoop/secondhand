@@ -1,9 +1,7 @@
 package com.secondhand.user.entity;
 
-import com.secondhand.common.entity.Basic;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Table;
+import com.secondhand.common.entity.Base;
+import jakarta.persistence.*;
 import lombok.*;
 
 @Entity
@@ -13,14 +11,24 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class User extends Basic {
+public class User extends Base {
 
     @Column(nullable = false, unique = true, length = 120)
     private String email;
 
-    // store a hash, not the raw password
-    @Column(name = "password_hash", nullable = false, length = 100)
-    private String passwordHash;
+    private String password;
 
+    private String username;
+
+    private String phone;
+
+    private String profilePhoto;
+
+    private long score;
+
+    private String description;
+
+    @Enumerated(EnumType.STRING)
+    private Role role;
 
 }
