@@ -1,5 +1,8 @@
 /Users/jeffreyye/Desktop/CS/secondhand/service-user/src/main/java/com/secondhand/user/entity/User.java
 /Users/jeffreyye/Desktop/CS/secondhand/service-user/src/main/java/com/secondhand/user/api/UserRegisterService.java
 /Users/jeffreyye/Desktop/CS/secondhand/service-user/src/main/java/com/secondhand/user/UserServiceApplication.java
+/Users/jeffreyye/Desktop/CS/secondhand/service-user/src/main/java/com/secondhand/user/api/UserEditService.java
+/Users/jeffreyye/Desktop/CS/secondhand/service-user/src/main/java/com/secondhand/user/entity/Role.java
 /Users/jeffreyye/Desktop/CS/secondhand/service-user/src/main/java/com/secondhand/user/repository/UserRepository.java
 /Users/jeffreyye/Desktop/CS/secondhand/service-user/src/main/java/com/secondhand/user/utils/DocBuilder.java
+/Users/jeffreyye/Desktop/CS/secondhand/service-user/src/main/java/com/secondhand/user/api/UserLoginService.java

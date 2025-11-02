@@ -13,7 +13,9 @@ com/secondhand/common/doc/entity/Param.class
 com/secondhand/common/validate/CodeValidate.class
 com/secondhand/common/validate/ActualNotNull.class
 com/secondhand/common/doc/DocUtils.class
+com/secondhand/common/entity/Base.class
 com/secondhand/common/doc/PackageUtils.class
+com/secondhand/common/tool/AssertUtil.class
 com/secondhand/common/support/IApiService.class
 com/secondhand/common/validate/Validate.class
 com/secondhand/common/doc/entity/Platform.class

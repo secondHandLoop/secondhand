@@ -1,6 +1,9 @@
+com/secondhand/user/api/UserLoginService.class
 com/secondhand/user/entity/User$UserBuilder.class
+com/secondhand/user/api/UserEditService.class
 com/secondhand/user/UserServiceApplication.class
 com/secondhand/user/repository/UserRepository.class
 com/secondhand/user/entity/User.class
 com/secondhand/user/utils/DocBuilder.class
 com/secondhand/user/api/UserRegisterService.class
+com/secondhand/user/entity/Role.class
