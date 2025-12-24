@@ -1,13 +1,17 @@
 package com.secondhand.user.entity;
-import com.secondhand.common.entity.Basic;
+import com.secondhand.common.entity.Base;
 import jakarta.persistence.Entity;
-import lombok.Getter;
-import lombok.Setter;
+import jakarta.persistence.Table;
+import lombok.*;
 
 @Entity
+@Table(name = "address")
 @Getter
 @Setter
-public class Address extends Basic {
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class Address extends Base {
 
     private Long userId;
     private String username;

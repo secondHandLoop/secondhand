@@ -17,7 +17,7 @@ import java.util.Map;
         request = {
                 @ApiParam(name = "email", value = "邮箱", dataType = "String"),
                 @ApiParam(name = "password", value = "密码", dataType = "String"),
-                @ApiParam(name = "name", value = "姓名", dataType = "String", required = false),
+                @ApiParam(name = "username", value = "姓名", dataType = "String", required = false),
         },
         response = {
                 @ApiParam(name = "id", value = "用户ID", dataType = "String"),
