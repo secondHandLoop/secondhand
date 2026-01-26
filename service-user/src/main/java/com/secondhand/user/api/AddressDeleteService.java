@@ -1,9 +1,12 @@
 package com.secondhand.user.api;
 
+import com.secondhand.common.entity.Status;
 import com.secondhand.common.support.ReflectApiService;
 import com.secondhand.common.doc.ApiParam;
 import com.secondhand.common.doc.Document;
 import com.secondhand.common.doc.Platform;
+import com.secondhand.common.tool.AssertUtil;
+import com.secondhand.user.entity.Address;
 import com.secondhand.user.repository.AddressRepository;
 import jakarta.annotation.Resource;
 import org.springframework.stereotype.Component;
@@ -30,13 +33,16 @@ public class AddressDeleteService extends ReflectApiService {
     @Resource
     private AddressRepository addressRepository;
 
-    public Map<String, Object> service(Long id) {
-        if (!addressRepository.existsById(id)) {
-            return fail("要删除的地址不存在", 404);
-        }
+    public Map<String, Object> service(Long uid, Long id) {
 
+        Address address = addressRepository.findById(id).orElse(null);
 
-        addressRepository.deleteById(id);
+        AssertUtil.isTrue(address != null, "要删除的地址不存在");
+        AssertUtil.isTrue(uid.equals(address.getUserId()), "无权限删除该地址");
+
+        address.setStatus(Status.DEL);
+        address.setUpdateAt(System.currentTimeMillis() / 1000);
+        addressRepository.save(address);
 
         return success();
     }

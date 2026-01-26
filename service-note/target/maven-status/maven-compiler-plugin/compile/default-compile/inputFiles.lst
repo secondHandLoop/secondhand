@@ -1,2 +1,12 @@
+/Users/jeffreyye/Desktop/CS/secondhand/service-note/src/main/java/com/secondhand/note/entity/NoteStatus.java
+/Users/jeffreyye/Desktop/CS/secondhand/service-note/src/main/java/com/secondhand/note/entity/History.java
+/Users/jeffreyye/Desktop/CS/secondhand/service-note/src/main/java/com/secondhand/note/entity/Collection.java
+/Users/jeffreyye/Desktop/CS/secondhand/service-note/src/main/java/com/secondhand/note/api/NoteListService.java
+/Users/jeffreyye/Desktop/CS/secondhand/service-note/src/main/java/com/secondhand/note/entity/Note.java
 /Users/jeffreyye/Desktop/CS/secondhand/service-note/src/main/java/com/secondhand/note/utils/DocBuilder.java
+/Users/jeffreyye/Desktop/CS/secondhand/service-note/src/main/java/com/secondhand/note/entity/TopCategory.java
+/Users/jeffreyye/Desktop/CS/secondhand/service-note/src/main/java/com/secondhand/note/api/NoteDeleteService.java
+/Users/jeffreyye/Desktop/CS/secondhand/service-note/src/main/java/com/secondhand/note/api/NoteAddService.java
 /Users/jeffreyye/Desktop/CS/secondhand/service-note/src/main/java/com/secondhand/note/NoteServiceApplication.java
+/Users/jeffreyye/Desktop/CS/secondhand/service-note/src/main/java/com/secondhand/note/repository/NoteRepository.java
+/Users/jeffreyye/Desktop/CS/secondhand/service-note/src/main/java/com/secondhand/note/api/NoteEditService.java

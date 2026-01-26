@@ -17,7 +17,7 @@ import java.util.List;
 @AllArgsConstructor
 @Builder
 public class Note extends Base {
-    private long userId;
+    private Long userId;
 
     private String username;
 
@@ -42,7 +42,7 @@ public class Note extends Base {
     private String comment;
 
     @Enumerated(EnumType.STRING)
-    private Status status;
+    private NoteStatus noteStatus;
 
     @Enumerated(EnumType.STRING)
     private TopCategory topCategory;

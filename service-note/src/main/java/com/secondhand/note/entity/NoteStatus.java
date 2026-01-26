@@ -1,8 +1,7 @@
 package com.secondhand.note.entity;
 
-public enum Status {
+public enum NoteStatus {
     DRAFT,
     PUBLISHED,
-    PRIVATE,
-    DELETED
+    PRIVATE
 }
