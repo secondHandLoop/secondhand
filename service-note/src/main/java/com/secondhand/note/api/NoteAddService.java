@@ -3,6 +3,7 @@ package com.secondhand.note.api;
 import com.secondhand.common.doc.ApiParam;
 import com.secondhand.common.doc.Document;
 import com.secondhand.common.doc.Platform;
+import com.secondhand.common.geo.GeocodingService;
 import com.secondhand.common.support.ReflectApiService;
 import com.secondhand.note.entity.Note;
 import com.secondhand.note.entity.NoteStatus;
@@ -35,6 +36,9 @@ public class NoteAddService extends ReflectApiService {
     @Resource
     private NoteRepository noteRepository;
 
+    @Resource
+    private com.secondhand.common.geo.GeocodingService geocodingService;
+
     public Map<String, Object> service(Long uid,
                                        String username,
                                        String title,
@@ -48,6 +52,7 @@ public class NoteAddService extends ReflectApiService {
                                        NoteStatus noteStatus,
                                        TopCategory topCategory,
                                        boolean delivery) {
+
         Note note = new Note();
         note.setUserId(uid);
         note.setUsername(username);
@@ -63,8 +68,15 @@ public class NoteAddService extends ReflectApiService {
         note.setTopCategory(topCategory);
         note.setDelivery(delivery);
 
+        // geocode
+        GeocodingService.LatLng ll = geocodingService.geocode(state, city, address, zipcode);
+        if (ll != null) {
+            note.setLatitude(ll.lat());
+            note.setLongitude(ll.lng());
+        }
+
         noteRepository.save(note);
         return success();
     }
-
 }
+

@@ -35,6 +35,10 @@ public class Note extends Base {
 
     private String zipcode;
 
+    private Double latitude;
+
+    private Double longitude;
+
     private int price;
 
     private long score;

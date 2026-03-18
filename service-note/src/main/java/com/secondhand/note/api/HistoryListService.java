@@ -6,6 +6,7 @@ import com.secondhand.common.doc.Platform;
 import com.secondhand.common.entity.Status;
 import com.secondhand.common.jdbc.JdbcQueryBuilder;
 import com.secondhand.common.output.IDataToMap;
+import com.secondhand.common.param.Param;
 import com.secondhand.common.support.ReflectApiService;
 import com.secondhand.note.entity.History;
 import com.secondhand.note.entity.Note;
@@ -22,6 +23,10 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Document(desc = "历史列表", module = "note", name = "历史列表", author = "Jeffrey", platform = {Platform.MANAGE, Platform.APP, Platform.APPLETS}, creatAt = "2026-01-09",
+        request = {
+                @ApiParam(name = "page", value = "页数", dataType = "Integer"),
+                @ApiParam(name = "limit", value = "一页条数", dataType = "Integer"),
+        },
         response = {
                 @ApiParam(name = "id", value = "帖子id", dataType = "String"),
                 @ApiParam(name = "userId", value = "用户id", dataType = "String"),
@@ -43,31 +48,51 @@ import java.util.stream.Collectors;
 public class HistoryListService extends ReflectApiService {
 
     @Resource
-    private HistoryRepository historyRepository;
-
-    @Resource
     private NoteRepository noteRepository;
 
-    public Map<String, Object> service(Long uid) {
+    public Map<String, Object> service(
+            @Param(value = "1", name = "page", required = false) Integer page,
+            @Param(value = "10", name = "limit", required = false) Integer limit,
+            Long uid) {
 
+        // defaults
+        page = (page == null || page < 1) ? 1 : page;
+        limit = (limit == null || limit < 1) ? 10 : limit;
+
+        // 1️⃣ total count
+        Long total = JdbcQueryBuilder
+                .build(History.class)
+                .eq("user_id", uid)
+                .eq("status", Status.ACTIVE.name())
+                .total();
+
+        if (total == 0) {
+            return success(Collections.emptyList());
+        }
+
+        // 2️⃣ page histories ordered by updateAt desc
         List<History> histories = JdbcQueryBuilder
                 .build(History.class)
                 .eq("user_id", uid)
                 .eq("status", Status.ACTIVE.name())
                 .orderBy("update_at", JdbcQueryBuilder.Sort.DESC)
+                .limit(page, limit)
                 .find(History.class);
 
         if (histories.isEmpty()) {
             return success(Collections.emptyList());
         }
 
+        // 3️⃣ keep order
         List<Long> noteIdsInOrder = new ArrayList<>();
         for (History h : histories) {
             noteIdsInOrder.add(h.getNoteId());
         }
 
+        // 4️⃣ fetch notes (order not guaranteed)
         List<Note> notes = noteRepository.findByIdIn(noteIdsInOrder);
 
+        // 5️⃣ reorder notes to match history order
         Map<Long, Note> noteMap = notes.stream()
                 .collect(Collectors.toMap(Note::getId, Function.identity()));
 

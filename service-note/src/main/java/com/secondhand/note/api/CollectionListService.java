@@ -6,14 +6,21 @@ import com.secondhand.common.doc.Platform;
 import com.secondhand.common.entity.Status;
 import com.secondhand.common.jdbc.JdbcQueryBuilder;
 import com.secondhand.common.output.IDataToMap;
+import com.secondhand.common.param.Param;
 import com.secondhand.common.support.ReflectApiService;
 import com.secondhand.note.entity.Collection;
 import com.secondhand.note.entity.Note;
 import org.springframework.stereotype.Component;
+
 import java.util.*;
+
 import static com.secondhand.common.jdbc.JdbcQueryBuilder.Sort.DESC;
 
 @Document(desc = "收藏列表", module = "note", name = "收藏列表", author = "Jeffrey", platform = {Platform.MANAGE, Platform.APP, Platform.APPLETS}, creatAt = "2026-01-09",
+        request = {
+                @ApiParam(name = "page", value = "页数", dataType = "Integer"),
+                @ApiParam(name = "limit", value = "一页条数", dataType = "Integer"),
+        },
         response = {
                 @ApiParam(name = "id", value = "帖子id", dataType = "String"),
                 @ApiParam(name = "userId", value = "用户id", dataType = "String"),
@@ -34,13 +41,30 @@ import static com.secondhand.common.jdbc.JdbcQueryBuilder.Sort.DESC;
 @Component("collectionListService1.0")
 public class CollectionListService extends ReflectApiService {
 
-    public Map<String, Object> service(Long uid) {
-        
+    public Map<String, Object> service(
+            @Param(value = "1", name = "page", required = false) Integer page,
+            @Param(value = "10", name = "limit", required = false) Integer limit,
+            Long uid) {
+
+        page = (page == null || page < 1) ? 1 : page;
+        limit = (limit == null || limit < 1) ? 10 : limit;
+
+        Long total = JdbcQueryBuilder
+                .build(Collection.class)
+                .eq("user_id", uid)
+                .eq("status", Status.ACTIVE.name())
+                .total();
+
+        if (total == 0) {
+            return success(Collections.emptyList());
+        }
+
         List<Collection> collections = JdbcQueryBuilder
                 .build(Collection.class)
                 .eq("user_id", uid)
                 .eq("status", Status.ACTIVE.name())
                 .orderBy("update_at", DESC)
+                .limit(page, limit)
                 .find(Collection.class);
 
         if (collections.isEmpty()) {
@@ -71,22 +95,24 @@ public class CollectionListService extends ReflectApiService {
             }
         }
 
-        return success(orderedNotes, (IDataToMap<Note>) (map, source) -> {
-            map.put("id", source.getId());
-            map.put("userId", source.getUserId());
-            map.put("username", source.getUsername());
-            map.put("title", source.getTitle());
-            map.put("description", source.getDescription());
-            map.put("photos", source.getPhotos());
-            map.put("state", source.getState());
-            map.put("city", source.getCity());
-            map.put("address", source.getAddress());
-            map.put("zipcode", source.getZipcode());
-            map.put("price", source.getPrice());
-            map.put("noteStatus", source.getNoteStatus());
-            map.put("topCategory", source.getTopCategory());
-            map.put("delivery", source.isDelivery());
-            map.put("updateAt", source.getUpdateAt());
-        });
+        return success(orderedNotes,
+                (IDataToMap<Note>) (map, source) -> {
+                    map.put("id", source.getId());
+                    map.put("userId", source.getUserId());
+                    map.put("username", source.getUsername());
+                    map.put("title", source.getTitle());
+                    map.put("description", source.getDescription());
+                    map.put("photos", source.getPhotos());
+                    map.put("state", source.getState());
+                    map.put("city", source.getCity());
+                    map.put("address", source.getAddress());
+                    map.put("zipcode", source.getZipcode());
+                    map.put("price", source.getPrice());
+                    map.put("noteStatus", source.getNoteStatus());
+                    map.put("topCategory", source.getTopCategory());
+                    map.put("delivery", source.isDelivery());
+                    map.put("updateAt", source.getUpdateAt());
+                });
     }
 }
+
