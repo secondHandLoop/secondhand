@@ -8,8 +8,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class DocBuilder {
     public static void main(String[] args) {
-        DocUtils.generate("com.secondhand.user.api");
+        DocUtils.generate("com.secondhand.user.service");
         log.info("doc build for user success...........................");
     }
 }
-

@@ -1,0 +1,75 @@
+package com.secondhand.user.service;
+
+import com.secondhand.common.exception.ApiException;
+import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
+import org.springframework.web.multipart.MultipartFile;
+import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
+import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
+import software.amazon.awssdk.core.sync.RequestBody;
+import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.PutObjectRequest;
+
+import java.io.IOException;
+import java.net.URI;
+import java.util.UUID;
+
+@Service
+public class UserPhotoUploadService {
+
+    private final R2StorageProperties properties;
+
+    public UserPhotoUploadService(R2StorageProperties properties) {
+        this.properties = properties;
+    }
+
+    public String uploadAvatar(MultipartFile file, Long userId) {
+        if (file == null || file.isEmpty()) {
+            throw new ApiException("请选择图片文件", 400);
+        }
+        if (!properties.isEnabled()) {
+            throw new ApiException("图片存储未启用", 500);
+        }
+
+        String key = properties.getAvatarPrefix() + "/" + userId + "/" + UUID.randomUUID() + "-" + sanitize(file.getOriginalFilename());
+
+        try (S3Client s3 = buildClient()) {
+            s3.putObject(
+                    PutObjectRequest.builder()
+                            .bucket(properties.getBucket())
+                            .key(key)
+                            .contentType(file.getContentType())
+                            .build(),
+                    RequestBody.fromBytes(file.getBytes())
+            );
+        } catch (IOException ex) {
+            throw new ApiException("上传失败: " + ex.getMessage(), 500);
+        }
+
+        return buildUrl(key);
+    }
+
+    private S3Client buildClient() {
+        return S3Client.builder()
+                .endpointOverride(URI.create(properties.getEndpoint()))
+                .region(Region.of(properties.getRegion()))
+                .credentialsProvider(StaticCredentialsProvider.create(
+                        AwsBasicCredentials.create(properties.getAccessKey(), properties.getSecretKey())
+                ))
+                .forcePathStyle(true)
+                .build();
+    }
+
+    private String buildUrl(String key) {
+        String base = StringUtils.hasText(properties.getPublicBaseUrl())
+                ? properties.getPublicBaseUrl().replaceAll("/$", "")
+                : properties.getEndpoint().replaceAll("/$", "") + "/" + properties.getBucket();
+        return base + "/" + key;
+    }
+
+    private String sanitize(String name) {
+        if (!StringUtils.hasText(name)) return "photo";
+        return name.replaceAll("[^A-Za-z0-9._-]", "_");
+    }
+}

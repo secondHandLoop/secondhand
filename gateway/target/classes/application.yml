@@ -6,6 +6,25 @@ spring:
     name: gateway
   cloud:
     gateway:
+      globalcors:
+        cors-configurations:
+          "[/**]":
+            allowedOrigins:
+              - "http://localhost:5173"
+              - "http://127.0.0.1:5173"
+              - "http://localhost:4173"
+              - "http://127.0.0.1:4173"
+              - "http://100.107.78.159:5173"
+              - "capacitor://localhost"
+            allowedMethods:
+              - GET
+              - POST
+              - PUT
+              - DELETE
+              - OPTIONS
+            allowedHeaders:
+              - "*"
+            allowCredentials: true
       routes:
         - id: user
           uri: http://localhost:8081
@@ -14,13 +33,13 @@ spring:
           filters:
             - StripPrefix=0
         - id: message
-          uri: http://localhost:8082
+          uri: http://localhost:8083
           predicates:
             - Path=/message/**
           filters:
             - StripPrefix=0
         - id: note
-          uri: http://localhost:8083
+          uri: http://localhost:8082
           predicates:
             - Path=/note/**
           filters:

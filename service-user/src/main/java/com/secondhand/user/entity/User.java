@@ -28,6 +28,10 @@ public class User extends Base {
 
     private String description;
 
+    private long emailVerifiedAt;
+
+    private long lastLoginAt;
+
     @Enumerated(EnumType.STRING)
     private Role role;
 

@@ -1,9 +1,10 @@
 package com.secondhand.common.geo;
 
-import com.secondhand.common.tool.AssertUtil;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
+import org.springframework.web.client.RestClientResponseException;
 
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
@@ -13,11 +14,17 @@ import java.util.concurrent.ConcurrentHashMap;
 @Service
 public class GeocodingService {
 
-    // Spring Boot 3: RestClient (recommended). If you don't have it, tell me and I'll switch to RestTemplate.
-    private final RestClient restClient = RestClient.builder()
-            .baseUrl("https://nominatim.openstreetmap.org")
-            .defaultHeader("User-Agent", "secondhand-app/1.0 (contact: your-email@example.com)")
-            .build();
+    @Value("${geocoding.nominatim.base-url:https://nominatim.openstreetmap.org}")
+    private String baseUrl;
+
+    @Value("${geocoding.nominatim.user-agent:secondhand-app/1.0}")
+    private String userAgent;
+
+    @Value("${geocoding.nominatim.referer:}")
+    private String referer;
+
+    @Value("${geocoding.nominatim.contact-email:}")
+    private String contactEmail;
 
     // very simple in-memory cache to reduce calls (important for Nominatim policy)
     private final Map<String, LatLng> cache = new ConcurrentHashMap<>();
@@ -30,22 +37,25 @@ public class GeocodingService {
         LatLng cached = cache.get(q);
         if (cached != null) return cached;
 
-        // Nominatim Search API (format=json, limit=1)
-        // Docs: https://nominatim.org/release-docs/latest/api/Search/  :contentReference[oaicite:1]{index=1}
-        String encoded = URLEncoder.encode(q, StandardCharsets.UTF_8);
-
-        NominatimResult[] results = restClient.get()
-                .uri("/search?format=json&limit=1&q={q}", encoded)
-                .retrieve()
-                .body(NominatimResult[].class);
+        NominatimResult[] results;
+        try {
+            results = createRestClient().get()
+                    .uri(buildSearchUri(q))
+                    .retrieve()
+                    .body(NominatimResult[].class);
+        } catch (RestClientResponseException ex) {
+            return null;
+        } catch (RuntimeException ex) {
+            return null;
+        }
 
         if (results == null || results.length == 0) {
             return null;
         }
 
         LatLng ll = new LatLng(
-                Double.parseDouble(results[0].lat()),
-                Double.parseDouble(results[0].lon())
+                Double.parseDouble(results[0].getLat()),
+                Double.parseDouble(results[0].getLon())
         );
 
         cache.put(q, ll);
@@ -70,8 +80,62 @@ public class GeocodingService {
         return q;
     }
 
-    public record LatLng(Double lat, Double lng) {}
+    private RestClient createRestClient() {
+        RestClient.Builder builder = RestClient.builder()
+                .baseUrl(baseUrl)
+                .defaultHeader("User-Agent", userAgent);
+        if (StringUtils.isNotBlank(referer)) {
+            builder.defaultHeader("Referer", referer);
+        }
+        return builder.build();
+    }
 
-    // minimal DTO for Nominatim response
-    public record NominatimResult(String lat, String lon) {}
+    private String buildSearchUri(String query) {
+        String encoded = URLEncoder.encode(query, StandardCharsets.UTF_8);
+        StringBuilder uri = new StringBuilder("/search?format=json&limit=1&q=").append(encoded);
+        if (StringUtils.isNotBlank(contactEmail)) {
+            uri.append("&email=")
+                    .append(URLEncoder.encode(contactEmail, StandardCharsets.UTF_8));
+        }
+        return uri.toString();
+    }
+
+    public static class LatLng {
+        private final Double lat;
+        private final Double lng;
+
+        public LatLng(Double lat, Double lng) {
+            this.lat = lat;
+            this.lng = lng;
+        }
+
+        public Double getLat() {
+            return lat;
+        }
+
+        public Double getLng() {
+            return lng;
+        }
+    }
+
+    public static class NominatimResult {
+        private String lat;
+        private String lon;
+
+        public String getLat() {
+            return lat;
+        }
+
+        public void setLat(String lat) {
+            this.lat = lat;
+        }
+
+        public String getLon() {
+            return lon;
+        }
+
+        public void setLon(String lon) {
+            this.lon = lon;
+        }
+    }
 }

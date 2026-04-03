@@ -247,7 +247,7 @@ public class JdbcQueryBuilder {
     public JdbcQueryBuilder or(List<String> keys, List<Object> values, List<String> ops) {
         if (Objects.nonNull(keys) && Objects.nonNull(values)) {
             builder.append(SPACE);
-            if (builder.indexOf(WHERE) == -1) {
+            if (!hasWhereClause()) {
                 builder.append(WHERE).append(SPACE);
             } else {
                 builder.append(AND).append(SPACE);
@@ -415,11 +415,13 @@ public class JdbcQueryBuilder {
     }
 
     private String limit(String sql) {
+        int offset = Math.max(0, (page - 1) * limit);
         return sql.concat(SPACE)
                 .concat("limit").concat(SPACE)
-                .concat(String.valueOf((page - 1) * limit))
-                .concat(",")
-                .concat(String.valueOf(limit));
+                .concat(String.valueOf(limit))
+                .concat(SPACE)
+                .concat("offset").concat(SPACE)
+                .concat(String.valueOf(offset));
     }
 
     public int delete() {
@@ -488,7 +490,7 @@ public class JdbcQueryBuilder {
                 String valueStr = Objects.toString(value);
                 valueStr = valueStr.replaceAll("\'", "\\\\'");
                 if (StringUtils.isNotEmpty(valueStr) && (!op.equals(IN) && !op.equals(NOT_IN))) {
-                    if (builder.indexOf(WHERE) == -1) {
+                    if (!hasWhereClause()) {
                         if (valueStr.contains("NULL")) {
                             builder.append(WHERE).append(SPACE).append("(").append(SPACE).append(key).append(SPACE).append(op).append(SPACE).append(SPACE).append(OR)
                                     .append(SPACE).append(key).append(SPACE).append(EQ).append(EMPTY).append(")");
@@ -506,21 +508,21 @@ public class JdbcQueryBuilder {
                 }
             }
             if (value instanceof Integer || value instanceof Long || op.equals(IN) || op.equals(NOT_IN)) {
-                if (builder.indexOf(WHERE) == -1) {
+                if (!hasWhereClause()) {
                     builder.append(WHERE).append(SPACE).append(key).append(SPACE).append(op).append(SPACE).append(value).append(SPACE);
                 } else {
                     builder.append(AND).append(SPACE).append(key).append(SPACE).append(op).append(SPACE).append(value).append(SPACE);
                 }
             }
             if (value instanceof Timestamp) {
-                if (builder.indexOf(WHERE) == -1) {
+                if (!hasWhereClause()) {
                     builder.append(WHERE).append(SPACE).append(key).append(SPACE).append(op).append(SPACE).append("'").append(value).append("'").append(SPACE);
                 } else {
                     builder.append(AND).append(SPACE).append(key).append(SPACE).append(op).append(SPACE).append("'").append(value).append("'").append(SPACE);
                 }
             }
             if (value instanceof Boolean) {
-                if (builder.indexOf(WHERE) == -1) {
+                if (!hasWhereClause()) {
                     builder.append(WHERE).append(SPACE).append(key).append(SPACE).append(op).append(SPACE).append(value).append(SPACE);
                 } else {
                     builder.append(AND).append(SPACE).append(key).append(SPACE).append(op).append(SPACE).append(value).append(SPACE);
@@ -528,6 +530,14 @@ public class JdbcQueryBuilder {
             }
         }
         return this;
+    }
+
+    private boolean hasWhereClause() {
+        if (builder.indexOf(WHERE) != -1) {
+            return true;
+        }
+        return StringUtils.isNotBlank(nativeSql)
+                && StringUtils.containsIgnoreCase(nativeSql, SPACE + WHERE + SPACE);
     }
 
     private void orOp(String key, Object value, String op) {

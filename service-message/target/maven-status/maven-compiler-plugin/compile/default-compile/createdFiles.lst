@@ -1,3 +1,10 @@
-com/secondhand/message/utils/DocBuilder.class
+com/secondhand/message/repository/MessageRepository.class
+com/secondhand/message/entity/Message$MessageBuilder.class
 com/secondhand/message/MessageServiceApplication.class
-com/secondhand/message/entity/MsgInfo.class
+com/secondhand/message/controller/MessageController.class
+com/secondhand/message/service/MessageListService.class
+com/secondhand/message/service/MessageAddService.class
+com/secondhand/message/controller/MessageController$MessageAddRequest.class
+com/secondhand/message/service/MessageDeleteService.class
+com/secondhand/message/entity/Message.class
+com/secondhand/message/utils/DocBuilder.class

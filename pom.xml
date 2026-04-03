@@ -84,7 +84,7 @@
 							<!-- Use the full reactor classpath (all built modules available) -->
 							<classpathScope>runtime</classpathScope>
 							<arguments>
-								<argument>com.secondhand.user.api</argument>
+								<argument>com.secondhand.user.service</argument>
 								<argument>user.json</argument>
 							</arguments>
 						</configuration>
@@ -99,7 +99,7 @@
 							<mainClass>com.secondhand.common.doc.DocGenerator</mainClass>
 							<classpathScope>runtime</classpathScope>
 							<arguments>
-								<argument>com.secondhand.message.api</argument>
+								<argument>com.secondhand.message.service</argument>
 								<argument>message.json</argument>
 							</arguments>
 						</configuration>
@@ -129,7 +129,7 @@
 							<mainClass>com.secondhand.common.doc.DocGenerator</mainClass>
 							<classpathScope>runtime</classpathScope>
 							<arguments>
-								<argument>com.secondhand.note.api</argument>
+								<argument>com.secondhand.note.service</argument>
 								<argument>note.json</argument>
 							</arguments>
 						</configuration>

@@ -2,6 +2,10 @@ server:
   port: 8081
 
 spring:
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 30MB
   datasource:
     url: jdbc:postgresql://localhost:5432/secondhand?currentSchema=user_svc
     username: postgres
@@ -16,3 +20,25 @@ spring:
     enabled: false            # set true when you add migrations
     default-schema: user_svc
     schemas: user_svc
+
+storage:
+  r2:
+    enabled: ${R2_ENABLED:false}
+    endpoint: ${R2_ENDPOINT:}
+    region: ${R2_REGION:auto}
+    bucket: ${R2_BUCKET:}
+    access-key: ${R2_ACCESS_KEY:}
+    secret-key: ${R2_SECRET_KEY:}
+    public-base-url: ${R2_PUBLIC_BASE_URL:}
+    avatar-prefix: ${R2_AVATAR_PREFIX:avatars}
+
+auth:
+  jwt:
+    issuer: ${AUTH_JWT_ISSUER:secondhand}
+    access-token-expiration-seconds: ${AUTH_JWT_ACCESS_TOKEN_EXPIRATION_SECONDS:604800}
+    secret: ${AUTH_JWT_SECRET:secondhand-change-me-please-use-a-long-random-secret}
+  email:
+    verification-code-expiration-seconds: ${AUTH_EMAIL_VERIFICATION_CODE_EXPIRATION_SECONDS:600}
+    inactive-login-threshold-seconds: ${AUTH_EMAIL_INACTIVE_LOGIN_THRESHOLD_SECONDS:2592000}
+    resend-api-key: ${RESEND_API_KEY:}
+    from-email: ${AUTH_EMAIL_FROM:Acme <onboarding@resend.dev>}

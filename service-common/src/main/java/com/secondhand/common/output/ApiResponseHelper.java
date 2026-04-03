@@ -83,11 +83,10 @@ public class ApiResponseHelper {
         Map<String, Object> map = new HashMap();
         map.put(Constant.STATUS_KEY, status);
         map.put(Constant.MESSAGE_KEY, message);
-        if (!ObjectUtils.isEmpty(body)) {
+        // Always include body when present — empty collections must still be returned
+        // so the frontend receives [] instead of a missing field (which causes crashes).
+        if (body != null) {
             map.put(Constant.BODY_KEY, body);
-        } else if (body instanceof List && !CollectionUtils.isEmpty((List) body)) {
-            map.put(Constant.STATUS_KEY, Constant.NO_DATA_CODE);
-            map.put(Constant.MESSAGE_KEY, "The result is empty");
         }
         return map;
     }
@@ -96,7 +95,7 @@ public class ApiResponseHelper {
         Map map = new HashMap();
         map.put(Constant.STATUS_KEY, status);
         map.put(Constant.MESSAGE_KEY, message);
-        map.put(Constant.BODY_KEY, ObjectUtils.isEmpty(body)?Collections.EMPTY_MAP:body);
+        map.put(Constant.BODY_KEY, body != null ? body : Collections.EMPTY_LIST);
         if (total != null) {
             map.put(Constant.PAGE_KEY, total);
         }

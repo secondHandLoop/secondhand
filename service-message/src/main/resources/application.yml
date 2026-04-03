@@ -2,17 +2,6 @@ server:
   port: 8083
 
 spring:
-  datasource:
-    url: jdbc:postgresql://localhost:5432/secondhand?currentSchema=message_svc
-    username: postgres
-    password: postgres
-  jpa:
-    hibernate:
-      ddl-auto: update
-    properties:
-      hibernate.format_sql: true
-      hibernate.jdbc.time_zone: UTC
-  flyway:
-    enabled: false
-    default-schema: message_svc
-    schemas: message_svc
+  data:
+    mongodb:
+      uri: ${MONGODB_URI:mongodb://localhost:27017/secondhand_message}
