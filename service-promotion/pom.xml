@@ -40,24 +40,6 @@
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
             </plugin>
-            <plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>exec-maven-plugin</artifactId>
-                <version>3.3.0</version>
-                <executions>
-                    <execution>
-                        <id>doc-promotion</id>
-                        <phase>package</phase> <!-- or verify -->
-                        <goals><goal>java</goal></goals>
-                        <configuration>
-                            <mainClass>com.secondhand.promotion.utils.DocBuilder</mainClass>
-                            <classpathScope>runtime</classpathScope>
-                            <includeProjectDependencies>true</includeProjectDependencies>
-                            <cleanupDaemonThreads>false</cleanupDaemonThreads>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
         </plugins>
     </build>
 </project>

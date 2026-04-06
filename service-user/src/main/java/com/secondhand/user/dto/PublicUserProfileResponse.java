@@ -1,0 +1,20 @@
+package com.secondhand.user.dto;
+
+import io.swagger.v3.oas.annotations.media.Schema;
+
+@Schema(description = "Public user profile visible to other users.")
+public class PublicUserProfileResponse {
+    @Schema(description = "User id.", example = "1")
+    private Long id;
+    @Schema(description = "Display name.", example = "Jeffrey")
+    private String username;
+    @Schema(description = "Public profile photo URL.", example = "https://cdn.example.com/avatar.jpg")
+    private String profilePhoto;
+
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
+    public String getUsername() { return username; }
+    public void setUsername(String username) { this.username = username; }
+    public String getProfilePhoto() { return profilePhoto; }
+    public void setProfilePhoto(String profilePhoto) { this.profilePhoto = profilePhoto; }
+}

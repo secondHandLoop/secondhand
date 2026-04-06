@@ -1,39 +1,26 @@
 package com.secondhand.user.service;
 
 import com.secondhand.common.entity.Status;
-import com.secondhand.common.support.ReflectApiService;
-import com.secondhand.common.doc.ApiParam;
-import com.secondhand.common.doc.Document;
-import com.secondhand.common.doc.Platform;
 import com.secondhand.common.tool.AssertUtil;
+import com.secondhand.user.dto.ApiResponse;
 import com.secondhand.user.entity.Address;
 import com.secondhand.user.repository.AddressRepository;
 import jakarta.annotation.Resource;
-import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 
-import java.util.Map;
-
-@Document(
-        desc = "删除地址",
-        module = "user",
-        name = "删除地址",
-        author = "Hongyu",
-        platform = {Platform.MANAGE, Platform.APP, Platform.APPLETS},
-        creatAt = "2025-11-01",
-        request = {
-                @ApiParam(name = "id", value = "地址ID", dataType = "Long")
-        },
-        response = {
-                @ApiParam(name = "message", value = "提示信息", dataType = "String")
-        }
-)
-@Component("addressDeleteService1.0")
-public class AddressDeleteService extends ReflectApiService {
+/**
+ * Soft-deletes address records owned by the current user.
+ */
+@Service
+public class AddressDeleteService {
 
     @Resource
     private AddressRepository addressRepository;
 
-    public Map<String, Object> service(Long currentUserId, Long id) {
+    /**
+     * Marks an address as deleted after verifying ownership.
+     */
+    public ApiResponse<Void> deleteAddress(Long currentUserId, Long id) {
 
         Address address = addressRepository.findById(id).orElse(null);
 
@@ -44,6 +31,6 @@ public class AddressDeleteService extends ReflectApiService {
         address.setUpdateAt(System.currentTimeMillis() / 1000);
         addressRepository.save(address);
 
-        return success();
+        return ApiResponse.success();
     }
 }

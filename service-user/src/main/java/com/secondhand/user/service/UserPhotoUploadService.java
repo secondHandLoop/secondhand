@@ -15,6 +15,9 @@ import java.io.IOException;
 import java.net.URI;
 import java.util.UUID;
 
+/**
+ * Uploads user avatar images to object storage and returns their public URL.
+ */
 @Service
 public class UserPhotoUploadService {
 
@@ -24,6 +27,9 @@ public class UserPhotoUploadService {
         this.properties = properties;
     }
 
+    /**
+     * Stores one avatar image for the current user.
+     */
     public String uploadAvatar(MultipartFile file, Long userId) {
         if (file == null || file.isEmpty()) {
             throw new ApiException("请选择图片文件", 400);
@@ -50,6 +56,9 @@ public class UserPhotoUploadService {
         return buildUrl(key);
     }
 
+    /**
+     * Creates an S3-compatible client configured for the current R2 bucket.
+     */
     private S3Client buildClient() {
         return S3Client.builder()
                 .endpointOverride(URI.create(properties.getEndpoint()))
@@ -61,6 +70,9 @@ public class UserPhotoUploadService {
                 .build();
     }
 
+    /**
+     * Converts an object key into the public URL exposed to clients.
+     */
     private String buildUrl(String key) {
         String base = StringUtils.hasText(properties.getPublicBaseUrl())
                 ? properties.getPublicBaseUrl().replaceAll("/$", "")
@@ -68,6 +80,9 @@ public class UserPhotoUploadService {
         return base + "/" + key;
     }
 
+    /**
+     * Replaces unsafe filename characters before storing user uploads.
+     */
     private String sanitize(String name) {
         if (!StringUtils.hasText(name)) return "photo";
         return name.replaceAll("[^A-Za-z0-9._-]", "_");

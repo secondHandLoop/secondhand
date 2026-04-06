@@ -1,57 +1,37 @@
 package com.secondhand.user.service;
 
 import com.secondhand.common.entity.Status;
-import com.secondhand.common.support.ReflectApiService;
-import com.secondhand.common.doc.ApiParam;
-import com.secondhand.common.doc.Document;
-import com.secondhand.common.doc.Platform;
 import com.secondhand.common.tool.AssertUtil;
+import com.secondhand.user.dto.ApiResponse;
 import com.secondhand.user.entity.Address;
 import com.secondhand.user.repository.AddressRepository;
 import jakarta.annotation.Resource;
 import jakarta.transaction.Transactional;
-import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 
 import java.util.List;
-import java.util.Map;
 
-@Document(
-        desc = "修改地址",
-        module = "user",
-        name = "修改地址",
-        author = "Hongyu",
-        platform = {Platform.MANAGE, Platform.APP, Platform.APPLETS},
-        creatAt = "2025-11-01",
-        request = {
-                @ApiParam(name = "id", value = "地址ID", dataType = "Long"),
-                @ApiParam(name = "state", value = "省份/州", dataType = "String", required = false),
-                @ApiParam(name = "city", value = "城市", dataType = "String", required = false),
-                @ApiParam(name = "address", value = "详细地址", dataType = "String", required = false),
-                @ApiParam(name = "zipcode", value = "邮编", dataType = "int", required = false),
-                @ApiParam(name = "isDefault", value = "是否默认地址", dataType = "boolean", required = false),
-                @ApiParam(name = "phone", value = "电话", dataType = "String", required = false)
-        },
-        response = {
-                @ApiParam(name = "id", value = "地址ID", dataType = "Long"),
-                @ApiParam(name = "message", value = "提示信息", dataType = "String")
-        }
-)
-
-@Component("addressEditService1.0")
-public class AddressEditService extends ReflectApiService {
+/**
+ * Updates address fields and keeps at most one default address per user.
+ */
+@Service
+public class AddressEditService {
 
     @Resource
     private AddressRepository addressRepository;
 
+    /**
+     * Applies partial updates to an address after validating ownership and status.
+     */
     @Transactional
-    public Map<String, Object> service(Long currentUserId,
-                                       Long id,
-                                       String state,
-                                       String city,
-                                       String address,
-                                       Integer zipcode,
-                                       Boolean isDefault,
-                                       String phone) {
+    public ApiResponse<Void> editAddress(Long currentUserId,
+                                         Long id,
+                                         String state,
+                                         String city,
+                                         String address,
+                                         Integer zipcode,
+                                         Boolean isDefault,
+                                         String phone) {
 
         Address addr = addressRepository.findById(id).orElse(null);
         AssertUtil.isTrue(addr != null, "地址不存在");
@@ -88,6 +68,6 @@ public class AddressEditService extends ReflectApiService {
         addr.setUpdateAt(System.currentTimeMillis() / 1000);
 
         addressRepository.save(addr);
-        return success();
+        return ApiResponse.success();
     }
 }

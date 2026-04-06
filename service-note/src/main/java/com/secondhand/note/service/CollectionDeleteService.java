@@ -1,30 +1,26 @@
 package com.secondhand.note.service;
 
-import com.secondhand.common.doc.ApiParam;
-import com.secondhand.common.doc.Document;
-import com.secondhand.common.doc.Platform;
 import com.secondhand.common.entity.Status;
-import com.secondhand.common.support.ReflectApiService;
 import com.secondhand.common.tool.AssertUtil;
+import com.secondhand.note.dto.ApiResponse;
 import com.secondhand.note.entity.Collection;
 import com.secondhand.note.repository.CollectionRepository;
 import jakarta.annotation.Resource;
-import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 
-import java.util.Map;
-
-@Document(desc = "删除收藏", module = "note", name = "删除收藏", author = "Jeffrey", platform = {Platform.MANAGE, Platform.APP, Platform.APPLETS}, creatAt = "2026-01-09",
-        request = {
-                @ApiParam(name = "noteId", value = "帖子ID", dataType = "long")
-        })
-
-@Component("collectionDeleteService1.0")
-public class CollectionDeleteService extends ReflectApiService {
+/**
+ * Soft-deletes collection records owned by the current user.
+ */
+@Service
+public class CollectionDeleteService {
 
     @Resource
     private CollectionRepository collectionRepository;
 
-    public Map<String, Object> service(Long currentUserId, Long noteId) {
+    /**
+     * Removes a note from the current user's collection list.
+     */
+    public ApiResponse<Void> deleteCollection(Long currentUserId, Long noteId) {
 
         Collection c = collectionRepository.findByUserIdAndNoteId(currentUserId, noteId).orElse(null);
         AssertUtil.isTrue(c != null, "收藏记录不存在");
@@ -35,6 +31,6 @@ public class CollectionDeleteService extends ReflectApiService {
         c.setUpdateAt(now);
         collectionRepository.save(c);
 
-        return success();
+        return ApiResponse.success();
     }
 }

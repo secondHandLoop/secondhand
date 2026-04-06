@@ -1,34 +1,21 @@
 package com.secondhand.user.service;
 
-import com.secondhand.common.doc.ApiParam;
-import com.secondhand.common.doc.Document;
-import com.secondhand.common.doc.Platform;
-import com.secondhand.common.support.ReflectApiService;
 import com.secondhand.common.tool.AssertUtil;
+import com.secondhand.user.dto.ApiResponse;
 import com.secondhand.user.entity.User;
 import com.secondhand.user.repository.UserRepository;
 import jakarta.annotation.Resource;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
-import java.util.Map;
 import java.util.Optional;
 
-@Document(desc = "用户编辑", module = "user", name = "用户编辑", author = "Jeffrey", platform = {Platform.MANAGE, Platform.APP, Platform.APPLETS}, creatAt = "2025-10-25",
-        request = {
-                @ApiParam(name = "user", value = "user", dataType = "User", note = "packing using User"),
-                @ApiParam(name = "email", value = "邮箱", dataType = "String"),
-                @ApiParam(name = "password", value = "密码", dataType = "String"),
-                @ApiParam(name = "name", value = "姓名", dataType = "String", required = false),
-        },
-        response = {
-                @ApiParam(name = "id", value = "用户ID", dataType = "String"),
-                @ApiParam(name = "email", value = "邮箱", dataType = "String"),
-                @ApiParam(name = "name", value = "姓名", dataType = "String")
-        })
-@Component("userEditService1.0")
-public class UserEditService extends ReflectApiService {
+/**
+ * Updates the current user's editable profile fields and sensitive credentials.
+ */
+@Service
+public class UserEditService {
 
     @Resource
     private UserRepository userRepository;
@@ -36,7 +23,10 @@ public class UserEditService extends ReflectApiService {
     @Resource
     private BCryptPasswordEncoder passwordEncoder;
 
-    public Map<String, Object> service(Long currentUserId, User user, String currentPassword) {
+    /**
+     * Applies profile changes and requires the current password for email/password updates.
+     */
+    public ApiResponse<Void> editUser(Long currentUserId, User user, String currentPassword) {
         User dbUser = userRepository.findById(user.getId())
                 .orElseThrow(() -> new IllegalArgumentException("用户不存在"));
 
@@ -83,6 +73,6 @@ public class UserEditService extends ReflectApiService {
         dbUser.setUpdateAt(System.currentTimeMillis() / 1000);
         userRepository.save(dbUser);
 
-        return success();
+        return ApiResponse.success();
     }
 }

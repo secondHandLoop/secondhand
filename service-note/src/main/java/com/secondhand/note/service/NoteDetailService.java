@@ -1,19 +1,21 @@
 package com.secondhand.note.service;
 
 import com.secondhand.common.entity.Status;
-import com.secondhand.common.output.ApiResponseHelper;
 import com.secondhand.common.tool.AssertUtil;
+import com.secondhand.note.dto.ApiResponse;
+import com.secondhand.note.dto.NoteDetailResponseBody;
+import com.secondhand.note.dto.NoteResponseMapper;
 import com.secondhand.note.entity.Note;
 import com.secondhand.note.entity.NoteStatus;
 import com.secondhand.note.repository.CollectionRepository;
 import com.secondhand.note.repository.NoteRepository;
 import org.springframework.stereotype.Service;
 
-import java.util.LinkedHashMap;
-import java.util.Map;
-
+/**
+ * Loads note details for app clients and computes owner/collection flags.
+ */
 @Service
-public class NoteDetailService extends ApiResponseHelper {
+public class NoteDetailService {
 
     private final NoteRepository noteRepository;
     private final CollectionRepository collectionRepository;
@@ -24,7 +26,10 @@ public class NoteDetailService extends ApiResponseHelper {
         this.collectionRepository = collectionRepository;
     }
 
-    public Map<String, Object> service(Long currentUserId, Long noteId) {
+    /**
+     * Returns the note detail view after applying ownership and publication checks.
+     */
+    public ApiResponse<NoteDetailResponseBody> getNoteDetail(Long currentUserId, Long noteId) {
         AssertUtil.notNull(noteId, "帖子ID不能为空");
 
         Note note = noteRepository.findById(noteId)
@@ -36,38 +41,13 @@ public class NoteDetailService extends ApiResponseHelper {
         boolean visible = note.getNoteStatus() == NoteStatus.PUBLISHED || owner;
         AssertUtil.isTrue(visible, "无权限查看该帖子");
 
-        Map<String, Object> body = new LinkedHashMap<>();
-        body.put("id", note.getId());
-        body.put("userId", note.getUserId());
-        body.put("username", note.getUsername());
-        body.put("title", note.getTitle());
-        body.put("description", note.getDescription());
-        body.put("photos", note.getPhotoList());
-        body.put("state", note.getState());
-        body.put("city", note.getCity());
-        body.put("address", note.getAddress());
-        body.put("zipcode", note.getZipcode());
-        body.put("latitude", note.getLatitude());
-        body.put("longitude", note.getLongitude());
-        body.put("price", note.getPrice());
-        body.put("score", note.getScore());
-        body.put("comment", note.getComment());
-        body.put("noteStatus", note.getNoteStatus());
-        body.put("topCategory", note.getTopCategory());
-        body.put("noteCondition", note.getNoteCondition());
-        body.put("delivery", note.isDelivery());
-        body.put("createAt", note.getCreateAt());
-        body.put("updateAt", note.getUpdateAt());
-        body.put("isOwner", owner);
-
         boolean collected = false;
         if (currentUserId != null) {
             collected = collectionRepository.findByUserIdAndNoteId(currentUserId, noteId)
                     .map(collection -> collection.getStatus() == Status.ACTIVE)
                     .orElse(false);
         }
-        body.put("isCollected", collected);
 
-        return success(body);
+        return ApiResponse.success(NoteResponseMapper.toNoteDetail(note, owner, collected));
     }
 }

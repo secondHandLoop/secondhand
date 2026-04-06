@@ -10,6 +10,9 @@ import org.springframework.web.client.RestClient;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Wraps the Resend email API used to deliver verification codes.
+ */
 @Service
 public class ResendEmailService {
 
@@ -23,6 +26,9 @@ public class ResendEmailService {
                 .build();
     }
 
+    /**
+     * Sends a single verification-code email for the requested auth scene.
+     */
     public void sendVerificationCode(String toEmail, String code, String scene) {
         if (!StringUtils.hasText(authEmailProperties.getResendApiKey())) {
             throw new ApiException("RESEND_API_KEY is not configured", 500);
@@ -52,6 +58,9 @@ public class ResendEmailService {
                 .toBodilessEntity();
     }
 
+    /**
+     * Strips accidental wrapping quotes from configured sender addresses.
+     */
     private String normalizeFromEmail(String fromEmail) {
         if (!StringUtils.hasText(fromEmail)) {
             return fromEmail;

@@ -1,49 +1,29 @@
 package com.secondhand.note.service;
 
-import com.secondhand.common.doc.ApiParam;
-import com.secondhand.common.doc.Document;
-import com.secondhand.common.doc.Platform;
 import com.secondhand.common.jdbc.JdbcQueryBuilder;
-import com.secondhand.common.output.IDataToMap;
-import com.secondhand.common.param.Param;
-import com.secondhand.common.support.ReflectApiService;
+import com.secondhand.note.dto.NoteResponseMapper;
 import com.secondhand.note.entity.Note;
 import com.secondhand.note.entity.TopCategory;
+import com.secondhand.note.openapi.schema.NoteListItemResponse;
+import com.secondhand.note.openapi.schema.NoteListResponse;
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 
 import java.util.*;
 
 import static com.secondhand.common.jdbc.JdbcQueryBuilder.LIKE;
 import static com.secondhand.common.jdbc.JdbcQueryBuilder.Sort.DESC;
 
-@Document(desc = "帖子列表", module = "note", name = "帖子列表", author = "Jeffrey", platform = {Platform.MANAGE, Platform.APP, Platform.APPLETS}, creatAt = "2026-02-16",
-        request = {
-                @ApiParam(name = "page", value = "页数", dataType = "Integer"),
-                @ApiParam(name = "limit", value = "一页条数", dataType = "Integer"),
-                @ApiParam(name = "keyword", value = "关键词", dataType = "String")
-        },
-        response = {
-                @ApiParam(name = "id", value = "帖子id", dataType = "String"),
-                @ApiParam(name = "userId", value = "用户id", dataType = "String"),
-                @ApiParam(name = "username", value = "用户名", dataType = "String"),
-                @ApiParam(name = "title", value = "标题", dataType = "String"),
-                @ApiParam(name = "description", value = "描述", dataType = "String"),
-                @ApiParam(name = "photos", value = "图片", dataType = "List<String>"),
-                @ApiParam(name = "state", value = "州", dataType = "String"),
-                @ApiParam(name = "city", value = "城市", dataType = "String"),
-                @ApiParam(name = "address", value = "地址", dataType = "String"),
-                @ApiParam(name = "zipcode", value = "邮编", dataType = "String"),
-                @ApiParam(name = "latitude", value = "纬度", dataType = "Double"),
-                @ApiParam(name = "longitude", value = "经度", dataType = "Double"),
-                @ApiParam(name = "price", value = "价格", dataType = "String"),
-                @ApiParam(name = "topCategory", value = "一级类", dataType = "enum"),
-                @ApiParam(name = "delivery", value = "是否运输", dataType = "boolean"),
-                @ApiParam(name = "updateAt", value = "更新时间", dataType = "long")
-        }
-)
-@Component("noteListService1.0")
-public class NoteListService extends ReflectApiService {
+/**
+ * Builds the note list returned to app clients.
+ *
+ * This service supports three feed behaviors:
+ * 1. default feed ordered by most recent updates
+ * 2. explore feed scored by recency, quality, interests, and distance
+ * 3. nearby feed ranked by GPS distance or by matching city/state metadata
+ */
+@Service
+public class NoteListService {
 
     // ─── Explore pool: how many recent notes to score before paginating ───
     private static final int EXPLORE_POOL_SIZE = 300;
@@ -54,25 +34,51 @@ public class NoteListService extends ReflectApiService {
     // ─── Proximity half-life: score = 0.5 at this distance ───
     private static final double PROXIMITY_HALF_LIFE_KM = 20.0;
 
-    public Map<String, Object> service(
-            @Param(value = "1",  name = "page",    required = false) Integer page,
-            @Param(value = "10", name = "limit",   required = false) Integer limit,
+    /**
+     * Returns a page of notes visible to the current user.
+     *
+     * The request mode is derived from the incoming flags:
+     * - {@code myNotes}: only the current user's active notes
+     * - {@code explore}: personalized ranking without explicit search filters
+     * - {@code nearby}: geographic ranking using coordinates or location strings
+     * - otherwise: normal recency-sorted listing
+     */
+    public NoteListResponse listNotes(
+            Integer page,
+            Integer limit,
             Long currentUserId,
             String keyword,
-
-            // optional filters
             TopCategory topCategory,
             Boolean delivery,
-            @Param(value = "false", name = "myNotes",  required = false) Boolean myNotes,
-
-            // explore ranking mode
-            @Param(value = "false", name = "explore",  required = false) Boolean explore,
+            Boolean myNotes,
+            Boolean explore,
             List<TopCategory> interestCategories,
+            Boolean nearby,
+            Double userLat,
+            Double userLng,
+            String userCity,
+            String userState,
+            String userZipcode
+    ) {
+        NoteListResponse response = new NoteListResponse();
+        response.setStatus(200);
+        response.setMessage("success");
+        response.setBody(listNoteItems(page, limit, currentUserId, keyword, topCategory, delivery, myNotes, explore,
+                interestCategories, nearby, userLat, userLng, userCity, userState, userZipcode));
+        return response;
+    }
 
-            // nearby sort
-            @Param(value = "false", name = "nearby",   required = false) Boolean nearby,
-
-            // user location
+    private List<NoteListItemResponse> listNoteItems(
+            Integer page,
+            Integer limit,
+            Long currentUserId,
+            String keyword,
+            TopCategory topCategory,
+            Boolean delivery,
+            Boolean myNotes,
+            Boolean explore,
+            List<TopCategory> interestCategories,
+            Boolean nearby,
             Double userLat,
             Double userLng,
             String userCity,
@@ -100,7 +106,7 @@ public class NoteListService extends ReflectApiService {
 
         Long total = countQ.total();
         if (total == null || total == 0) {
-            return success(Collections.emptyList());
+            return Collections.emptyList();
         }
 
         // ── LIST ──────────────────────────────────────────────────────────────
@@ -164,35 +170,21 @@ public class NoteListService extends ReflectApiService {
                     .find(Note.class);
         }
 
-        return success(result, (IDataToMap<Note>) (map, source) -> {
-            map.put("id",            source.getId());
-            map.put("userId",        source.getUserId());
-            map.put("username",      source.getUsername());
-            map.put("title",         source.getTitle());
-            map.put("description",   source.getDescription());
-            map.put("photos",        source.getPhotoList());
-            map.put("state",         source.getState());
-            map.put("city",          source.getCity());
-            map.put("address",       source.getAddress());
-            map.put("zipcode",       source.getZipcode());
-            map.put("latitude",      source.getLatitude());
-            map.put("longitude",     source.getLongitude());
-            map.put("price",         source.getPrice());
-            map.put("topCategory",   source.getTopCategory());
-            map.put("noteCondition", source.getNoteCondition());
-            map.put("delivery",      source.isDelivery());
-            map.put("updateAt",      source.getUpdateAt());
-            map.put("noteStatus",    source.getNoteStatus());
-        });
+        List<NoteListItemResponse> items = new ArrayList<>(result.size());
+        for (Note note : result) {
+            items.add(NoteResponseMapper.toNoteListItem(note));
+        }
+        return items;
     }
 
     // ── Explore scoring ───────────────────────────────────────────────────────
 
     /**
-     * Combined relevance score in [0, 1].
+     * Scores a note for the explore feed.
      *
-     * With location:    35% proximity + 30% recency + 20% interest + 15% quality
-     * Without location: 50% recency  + 30% interest + 20% quality
+     * With location data the score blends proximity, recency, interests, and
+     * content quality. Without location data the proximity weight is shifted to
+     * recency so notes can still be ranked predictably.
      */
     private double computeExploreScore(
             Note note,
@@ -231,6 +223,9 @@ public class NoteListService extends ReflectApiService {
 
     // ── Query builders ────────────────────────────────────────────────────────
 
+    /**
+     * Creates the base query for the current user's own active notes.
+     */
     private JdbcQueryBuilder buildMyNoteQuery(Long userId, boolean count) {
         String sql = count
                 ? "select count(1) total from note where status = 'ACTIVE' and user_id = " + userId
@@ -238,6 +233,12 @@ public class NoteListService extends ReflectApiService {
         return JdbcQueryBuilder.build().select(sql);
     }
 
+    /**
+     * Creates the base query for notes visible in shared feeds.
+     *
+     * Published active notes are returned, and when a user is logged in their
+     * own notes are excluded so feed recommendations do not echo their posts.
+     */
     private JdbcQueryBuilder buildVisibleNoteQuery(Long currentUserId, boolean count) {
         String sql;
         if (currentUserId == null) {
@@ -253,6 +254,9 @@ public class NoteListService extends ReflectApiService {
         return JdbcQueryBuilder.build().select(sql);
     }
 
+    /**
+     * Applies optional search filters shared by the default and nearby feeds.
+     */
     private void applyFilters(JdbcQueryBuilder q, String keyword, TopCategory topCategory, Boolean delivery) {
         if (StringUtils.isNotBlank(keyword)) {
             List<String> keys   = Arrays.asList("LOWER(username)", "LOWER(title)", "LOWER(description)");
@@ -269,6 +273,11 @@ public class NoteListService extends ReflectApiService {
 
     // ── Nearby comparators ────────────────────────────────────────────────────
 
+    /**
+     * Orders notes by coordinate distance and falls back to update time.
+     *
+     * Notes with coordinates are always preferred over notes without them.
+     */
     private int compareByLatLng(Note a, Note b, double userLat, double userLng) {
         boolean aHas = (a.getLatitude() != null && a.getLongitude() != null);
         boolean bHas = (b.getLatitude() != null && b.getLongitude() != null);
@@ -282,6 +291,9 @@ public class NoteListService extends ReflectApiService {
         return Long.compare(b.getUpdateAt(), a.getUpdateAt());
     }
 
+    /**
+     * Orders notes by coarse geographic match when exact coordinates are unavailable.
+     */
     private int compareByCityState(Note a, Note b, String userCity, String userState, String userZipcode) {
         int tierA = geographicTier(a, userCity, userState, userZipcode);
         int tierB = geographicTier(b, userCity, userState, userZipcode);
@@ -289,6 +301,12 @@ public class NoteListService extends ReflectApiService {
         return Long.compare(b.getUpdateAt(), a.getUpdateAt());
     }
 
+    /**
+     * Assigns a location tier used by nearby sorting.
+     *
+     * Tier 0 is zipcode or city match, tier 1 is state match, and tier 2 is
+     * everything else.
+     */
     private int geographicTier(Note note, String userCity, String userState, String userZipcode) {
         if (StringUtils.isNotBlank(userZipcode) && userZipcode.equals(note.getZipcode())) return 0;
         if (StringUtils.isNotBlank(userCity) && userCity.equalsIgnoreCase(note.getCity())) return 0;
@@ -298,6 +316,9 @@ public class NoteListService extends ReflectApiService {
 
     // ── Utilities ─────────────────────────────────────────────────────────────
 
+    /**
+     * Calculates the great-circle distance between two coordinates in kilometers.
+     */
     private double haversineKm(double lat1, double lon1, double lat2, double lon2) {
         final double R = 6371.0;
         double dLat = Math.toRadians(lat2 - lat1);
@@ -308,13 +329,19 @@ public class NoteListService extends ReflectApiService {
         return R * 2.0 * Math.asin(Math.sqrt(a));
     }
 
-
+    /**
+     * Expands the candidate pool for nearby sorting so reordering still has
+     * enough items to produce a stable page after distance-based ranking.
+     */
     private int calcBuffer(int page, int limit) {
         int buffer = page * limit * 5;
         if (buffer < limit * 5) buffer = limit * 5;
         return Math.min(buffer, 500);
     }
 
+    /**
+     * Returns the requested page from an already materialized and sorted list.
+     */
     private <T> List<T> slicePage(List<T> list, int page, int limit) {
         int from = (page - 1) * limit;
         if (from >= list.size()) return Collections.emptyList();

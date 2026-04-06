@@ -1,7 +1,10 @@
 package com.secondhand.note.service;
 
 import com.secondhand.common.entity.Status;
-import com.secondhand.common.output.ApiResponseHelper;
+import com.secondhand.note.dto.ApiResponse;
+import com.secondhand.note.dto.ManagerNoteListItemResponse;
+import com.secondhand.note.dto.NoteResponseMapper;
+import com.secondhand.note.dto.PageInfoResponse;
 import com.secondhand.note.entity.Note;
 import com.secondhand.note.entity.NoteStatus;
 import com.secondhand.note.entity.TopCategory;
@@ -15,13 +18,14 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 
+/**
+ * Builds the manager note list with administrative filters and pagination metadata.
+ */
 @Service
-public class ManagerNoteListService extends ApiResponseHelper {
+public class ManagerNoteListService {
 
     private final NoteRepository noteRepository;
 
@@ -29,14 +33,17 @@ public class ManagerNoteListService extends ApiResponseHelper {
         this.noteRepository = noteRepository;
     }
 
-    public Map<String, Object> service(Integer page,
-                                       Integer limit,
-                                       String keyword,
-                                       Long userId,
-                                       NoteStatus noteStatus,
-                                       TopCategory topCategory,
-                                       Boolean delivery,
-                                       String status) {
+    /**
+     * Returns a filtered page of notes for manager review screens.
+     */
+    public ApiResponse<List<ManagerNoteListItemResponse>> listNotesForManager(Integer page,
+                                                                              Integer limit,
+                                                                              String keyword,
+                                                                              Long userId,
+                                                                              NoteStatus noteStatus,
+                                                                              TopCategory topCategory,
+                                                                              Boolean delivery,
+                                                                              String status) {
         int pageNo = (page == null || page < 1) ? 1 : page;
         int pageSize = (limit == null || limit < 1) ? 20 : limit;
 
@@ -78,33 +85,16 @@ public class ManagerNoteListService extends ApiResponseHelper {
                 PageRequest.of(pageNo - 1, pageSize, Sort.by(Sort.Direction.DESC, "updateAt"))
         );
 
-        List<Map<String, Object>> body = new ArrayList<>();
+        List<ManagerNoteListItemResponse> body = new ArrayList<>();
         for (Note note : result.getContent()) {
-            Map<String, Object> item = new LinkedHashMap<>();
-            item.put("id", note.getId());
-            item.put("userId", note.getUserId());
-            item.put("username", note.getUsername());
-            item.put("title", note.getTitle());
-            item.put("description", note.getDescription());
-            item.put("photos", note.getPhotoList());
-            item.put("state", note.getState());
-            item.put("city", note.getCity());
-            item.put("zipcode", note.getZipcode());
-            item.put("price", note.getPrice());
-            item.put("noteStatus", note.getNoteStatus());
-            item.put("topCategory", note.getTopCategory());
-            item.put("delivery", note.isDelivery());
-            item.put("status", note.getStatus());
-            item.put("createAt", note.getCreateAt());
-            item.put("updateAt", note.getUpdateAt());
-            body.add(item);
+            body.add(NoteResponseMapper.toManagerNoteListItem(note));
         }
 
-        Map<String, Object> pageInfo = new LinkedHashMap<>();
-        pageInfo.put("page", pageNo);
-        pageInfo.put("limit", pageSize);
-        pageInfo.put("total", result.getTotalElements());
+        PageInfoResponse pageInfo = new PageInfoResponse();
+        pageInfo.setPage(pageNo);
+        pageInfo.setLimit(pageSize);
+        pageInfo.setTotal(result.getTotalElements());
 
-        return success(body, pageInfo);
+        return ApiResponse.success(body, pageInfo);
     }
 }

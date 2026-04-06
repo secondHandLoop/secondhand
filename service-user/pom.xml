@@ -50,6 +50,11 @@
             <artifactId>s3</artifactId>
             <version>2.25.67</version>
         </dependency>
+        <dependency>
+            <groupId>org.springdoc</groupId>
+            <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+            <version>2.6.0</version>
+        </dependency>
     </dependencies>
 
     <build>
@@ -57,24 +62,6 @@
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
-            </plugin>
-            <plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>exec-maven-plugin</artifactId>
-                <version>3.3.0</version>
-                <executions>
-                    <execution>
-                        <id>doc-user</id>
-                        <phase>package</phase> <!-- or verify -->
-                        <goals><goal>java</goal></goals>
-                        <configuration>
-                            <mainClass>com.secondhand.user.utils.DocBuilder</mainClass>
-                            <classpathScope>runtime</classpathScope>
-                            <includeProjectDependencies>true</includeProjectDependencies>
-                            <cleanupDaemonThreads>false</cleanupDaemonThreads>
-                        </configuration>
-                    </execution>
-                </executions>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>

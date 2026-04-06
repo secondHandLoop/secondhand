@@ -1,17 +1,19 @@
 package com.secondhand.user.service;
 
-import com.secondhand.common.output.ApiResponseHelper;
 import com.secondhand.common.tool.AssertUtil;
+import com.secondhand.user.dto.ApiResponse;
+import com.secondhand.user.dto.PublicUserProfileResponse;
+import com.secondhand.user.dto.UserProfileResponse;
+import com.secondhand.user.dto.UserResponseMapper;
 import com.secondhand.user.entity.User;
 import com.secondhand.user.repository.UserRepository;
 import org.springframework.stereotype.Service;
-import org.springframework.util.StringUtils;
 
-import java.util.LinkedHashMap;
-import java.util.Map;
-
+/**
+ * Loads private and public user profile views.
+ */
 @Service
-public class UserProfileService extends ApiResponseHelper {
+public class UserProfileService {
 
     private final UserRepository userRepository;
 
@@ -19,46 +21,25 @@ public class UserProfileService extends ApiResponseHelper {
         this.userRepository = userRepository;
     }
 
-    public Map<String, Object> service(Long currentUserId) {
+    /**
+     * Returns the authenticated user's own profile payload.
+     */
+    public ApiResponse<UserProfileResponse> getProfile(Long currentUserId) {
         AssertUtil.notNull(currentUserId, "用户未登录");
 
         User user = userRepository.findById(currentUserId)
                 .orElseThrow(() -> new IllegalArgumentException("用户不存在"));
 
-        Map<String, Object> body = new LinkedHashMap<>();
-        body.put("id", user.getId());
-        body.put("email", user.getEmail());
-        body.put("username", user.getUsername());
-        body.put("role", user.getRole());
-        body.put("score", user.getScore());
-        body.put("lastLoginAt", user.getLastLoginAt());
-        body.put("emailVerifiedAt", user.getEmailVerifiedAt());
-        body.put("createAt", user.getCreateAt());
-        body.put("updateAt", user.getUpdateAt());
-
-        if (StringUtils.hasText(user.getPhone())) {
-            body.put("phone", user.getPhone());
-        }
-        if (StringUtils.hasText(user.getProfilePhoto())) {
-            body.put("profilePhoto", user.getProfilePhoto());
-        }
-        if (StringUtils.hasText(user.getDescription())) {
-            body.put("description", user.getDescription());
-        }
-
-        return success(body);
+        return ApiResponse.success(UserResponseMapper.toProfile(user));
     }
 
-    public Map<String, Object> publicProfile(Long userId) {
+    /**
+     * Returns the public profile shown to other users.
+     */
+    public ApiResponse<PublicUserProfileResponse> getPublicProfile(Long userId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("用户不存在"));
 
-        Map<String, Object> body = new LinkedHashMap<>();
-        body.put("id", user.getId());
-        body.put("username", user.getUsername());
-        if (StringUtils.hasText(user.getProfilePhoto())) {
-            body.put("profilePhoto", user.getProfilePhoto());
-        }
-        return success(body);
+        return ApiResponse.success(UserResponseMapper.toPublicProfile(user));
     }
 }

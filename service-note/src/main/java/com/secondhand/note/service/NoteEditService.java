@@ -2,24 +2,26 @@ package com.secondhand.note.service;
 
 import com.secondhand.common.entity.Status;
 import com.secondhand.common.geo.GeocodingService;
-import com.secondhand.common.support.ReflectApiService;
 import com.secondhand.common.tool.AssertUtil;
+import com.secondhand.note.dto.ApiResponse;
 import com.secondhand.note.entity.Note;
 import com.secondhand.note.entity.NoteCondition;
 import com.secondhand.note.entity.NoteStatus;
 import com.secondhand.note.entity.TopCategory;
 import com.secondhand.note.repository.NoteRepository;
 import jakarta.annotation.Resource;
-import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 
-@Component("noteEditService1.0")
-public class NoteEditService extends ReflectApiService {
+/**
+ * Updates note fields, refreshes geocoding when the address changes, and prunes deleted photos.
+ */
+@Service
+public class NoteEditService {
 
     @Resource
     private NoteRepository noteRepository;
@@ -30,21 +32,24 @@ public class NoteEditService extends ReflectApiService {
     @Resource
     private NotePhotoStorageService notePhotoStorageService;
 
-    public Map<String, Object> service(Long currentUserId,
-                                       Long noteId,
-                                       String title,
-                                       String description,
-                                       List<String> newPhotoUrls,
-                                       List<String> deletePhotoUrls,
-                                       String state,
-                                       String city,
-                                       String address,
-                                       String zipcode,
-                                       Integer price,
-                                       NoteStatus noteStatus,
-                                       TopCategory topCategory,
-                                       NoteCondition noteCondition,
-                                       Boolean delivery) {
+    /**
+     * Applies partial updates to a note owned by the current user.
+     */
+    public ApiResponse<Void> editNote(Long currentUserId,
+                                      Long noteId,
+                                      String title,
+                                      String description,
+                                      List<String> newPhotoUrls,
+                                      List<String> deletePhotoUrls,
+                                      String state,
+                                      String city,
+                                      String address,
+                                      String zipcode,
+                                      Integer price,
+                                      NoteStatus noteStatus,
+                                      TopCategory topCategory,
+                                      NoteCondition noteCondition,
+                                      Boolean delivery) {
 
         Optional<Note> optional = noteRepository.findById(noteId);
         AssertUtil.isTrue(optional.isPresent(), "帖子不存在");
@@ -95,6 +100,6 @@ public class NoteEditService extends ReflectApiService {
         if (deletePhotoUrls != null && !deletePhotoUrls.isEmpty()) {
             notePhotoStorageService.deleteByUrls(deletePhotoUrls);
         }
-        return success();
+        return ApiResponse.success();
     }
 }

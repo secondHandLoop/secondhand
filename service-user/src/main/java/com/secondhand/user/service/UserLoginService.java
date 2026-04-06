@@ -1,8 +1,11 @@
 package com.secondhand.user.service;
 
 import com.secondhand.common.auth.JwtTokenService;
-import com.secondhand.common.output.ApiResponseHelper;
 import com.secondhand.common.tool.AssertUtil;
+import com.secondhand.user.dto.ApiResponse;
+import com.secondhand.user.dto.AuthSuccessResponse;
+import com.secondhand.user.dto.UserResponseMapper;
+import com.secondhand.user.dto.VerificationChallengeResponse;
 import com.secondhand.user.entity.EmailVerificationChallenge;
 import com.secondhand.user.entity.EmailVerificationPurpose;
 import com.secondhand.user.entity.User;
@@ -12,11 +15,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
 import java.time.Instant;
-import java.util.LinkedHashMap;
-import java.util.Map;
 
+/**
+ * Handles password login and optional email re-verification for inactive accounts.
+ */
 @Service
-public class UserLoginService extends ApiResponseHelper {
+public class UserLoginService {
 
     private final UserRepository userRepository;
     private final BCryptPasswordEncoder passwordEncoder;
@@ -36,7 +40,10 @@ public class UserLoginService extends ApiResponseHelper {
         this.jwtTokenService = jwtTokenService;
     }
 
-    public Map<String, Object> login(String email, String password) {
+    /**
+     * Authenticates a user and may return a verification challenge instead of a token.
+     */
+    public ApiResponse<?> login(String email, String password) {
         AssertUtil.notNullOrBlank(email, "邮箱不能为空");
         AssertUtil.notNullOrBlank(password, "密码不能为空");
 
@@ -54,20 +61,23 @@ public class UserLoginService extends ApiResponseHelper {
                     "login"
             );
 
-            Map<String, Object> body = new LinkedHashMap<>();
-            body.put("verificationRequired", true);
-            body.put("verificationToken", challenge.getChallengeToken());
-            body.put("expiresAt", challenge.getExpiresAt());
-            body.put("email", user.getEmail());
-            return success(body);
+            VerificationChallengeResponse body = new VerificationChallengeResponse();
+            body.setVerificationRequired(true);
+            body.setVerificationToken(challenge.getChallengeToken());
+            body.setExpiresAt(challenge.getExpiresAt());
+            body.setEmail(user.getEmail());
+            return ApiResponse.success(body);
         }
 
         user.setLastLoginAt(now);
         userRepository.save(user);
-        return success(buildAuthBody(user));
+        return ApiResponse.success(buildAuthBody(user));
     }
 
-    public Map<String, Object> verifyLoginEmail(String verificationToken, String code) {
+    /**
+     * Completes the login flow after a verification code has been confirmed.
+     */
+    public ApiResponse<AuthSuccessResponse> verifyLoginEmail(String verificationToken, String code) {
         EmailVerificationChallenge challenge = emailVerificationService.verifyCode(
                 verificationToken,
                 code,
@@ -83,33 +93,25 @@ public class UserLoginService extends ApiResponseHelper {
         userRepository.save(user);
         emailVerificationService.consume(challenge);
 
-        return success(buildAuthBody(user));
+        return ApiResponse.success(buildAuthBody(user));
     }
 
+    /**
+     * Determines whether inactivity requires the user to re-verify their email.
+     */
     private boolean requiresEmailReverification(User user, long now) {
         return user.getLastLoginAt() > 0
                 && now - user.getLastLoginAt() >= authEmailProperties.getInactiveLoginThresholdSeconds();
     }
 
-    private Map<String, Object> buildAuthBody(User user) {
-        Map<String, Object> body = new LinkedHashMap<>();
-        body.put("accessToken", jwtTokenService.createAccessToken(user.getId(), user.getEmail(), user.getRole().name()));
-        body.put("tokenType", "Bearer");
-        body.put("user", buildUserBody(user));
+    /**
+     * Builds the standard auth payload returned after successful login.
+     */
+    private AuthSuccessResponse buildAuthBody(User user) {
+        AuthSuccessResponse body = new AuthSuccessResponse();
+        body.setAccessToken(jwtTokenService.createAccessToken(user.getId(), user.getEmail(), user.getRole().name()));
+        body.setTokenType("Bearer");
+        body.setUser(UserResponseMapper.toAuthUser(user));
         return body;
-    }
-
-    private Map<String, Object> buildUserBody(User user) {
-        Map<String, Object> userBody = new LinkedHashMap<>();
-        userBody.put("id", user.getId());
-        userBody.put("email", user.getEmail());
-        userBody.put("username", user.getUsername());
-        userBody.put("role", user.getRole());
-        userBody.put("lastLoginAt", user.getLastLoginAt());
-        userBody.put("emailVerifiedAt", user.getEmailVerifiedAt());
-        if (StringUtils.hasText(user.getPhone())) {
-            userBody.put("phone", user.getPhone());
-        }
-        return userBody;
     }
 }

@@ -10,6 +10,9 @@ import org.springframework.stereotype.Service;
 import java.time.Instant;
 import java.util.UUID;
 
+/**
+ * Manages the lifecycle of email verification challenges across auth flows.
+ */
 @Service
 public class EmailVerificationService {
 
@@ -25,6 +28,9 @@ public class EmailVerificationService {
         this.authEmailProperties = authEmailProperties;
     }
 
+    /**
+     * Creates a fresh verification challenge, stores it, and sends the code by email.
+     */
     public EmailVerificationChallenge createAndSendChallenge(String email, EmailVerificationPurpose purpose, String scene) {
         long now = Instant.now().getEpochSecond();
         EmailVerificationChallenge challenge = EmailVerificationChallenge.builder()
@@ -41,6 +47,9 @@ public class EmailVerificationService {
         return challenge;
     }
 
+    /**
+     * Verifies a submitted code and records the successful verification timestamp.
+     */
     public EmailVerificationChallenge verifyCode(String challengeToken, String code, EmailVerificationPurpose purpose) {
         AssertUtil.notNullOrBlank(challengeToken, "verificationToken不能为空");
         AssertUtil.notNullOrBlank(code, "验证码不能为空");
@@ -60,6 +69,9 @@ public class EmailVerificationService {
         return challenge;
     }
 
+    /**
+     * Loads a previously verified challenge that is still valid and unused.
+     */
     public EmailVerificationChallenge requireVerifiedChallenge(String challengeToken, EmailVerificationPurpose purpose) {
         EmailVerificationChallenge challenge = challengeRepository
                 .findByChallengeTokenAndPurpose(challengeToken, purpose)
@@ -72,6 +84,9 @@ public class EmailVerificationService {
         return challenge;
     }
 
+    /**
+     * Marks a challenge as consumed so it cannot be reused.
+     */
     public void consume(EmailVerificationChallenge challenge) {
         long now = Instant.now().getEpochSecond();
         challenge.setConsumedAt(now);

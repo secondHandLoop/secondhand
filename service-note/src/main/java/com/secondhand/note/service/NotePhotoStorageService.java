@@ -20,6 +20,9 @@ import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 
+/**
+ * Uploads note photos to object storage and translates stored URLs back to object keys.
+ */
 @Service
 public class NotePhotoStorageService {
 
@@ -29,6 +32,9 @@ public class NotePhotoStorageService {
         this.properties = properties;
     }
 
+    /**
+     * Uploads the provided note photos and returns their public URLs.
+     */
     public List<String> uploadPhotos(List<MultipartFile> files, Long userId) {
         if (files == null || files.isEmpty()) {
             return Collections.emptyList();
@@ -60,6 +66,9 @@ public class NotePhotoStorageService {
         return uploadedUrls;
     }
 
+    /**
+     * Deletes previously uploaded note photos when their URLs map back to this bucket.
+     */
     public void deleteByUrls(List<String> urls) {
         if (urls == null || urls.isEmpty() || !properties.isEnabled()) {
             return;

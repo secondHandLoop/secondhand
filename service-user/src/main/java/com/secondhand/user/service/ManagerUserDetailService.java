@@ -1,7 +1,10 @@
 package com.secondhand.user.service;
 
-import com.secondhand.common.output.ApiResponseHelper;
 import com.secondhand.common.tool.AssertUtil;
+import com.secondhand.user.dto.AddressResponse;
+import com.secondhand.user.dto.ApiResponse;
+import com.secondhand.user.dto.ManagerUserDetailResponse;
+import com.secondhand.user.dto.UserResponseMapper;
 import com.secondhand.user.entity.Address;
 import com.secondhand.user.entity.User;
 import com.secondhand.user.repository.AddressRepository;
@@ -9,12 +12,13 @@ import com.secondhand.user.repository.UserRepository;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 
+/**
+ * Builds manager-facing user detail responses including address history.
+ */
 @Service
-public class ManagerUserDetailService extends ApiResponseHelper {
+public class ManagerUserDetailService {
 
     private final UserRepository userRepository;
     private final AddressRepository addressRepository;
@@ -25,45 +29,36 @@ public class ManagerUserDetailService extends ApiResponseHelper {
         this.addressRepository = addressRepository;
     }
 
-    public Map<String, Object> service(Long userId) {
+    /**
+     * Loads a user profile and all related addresses for administrative review.
+     */
+    public ApiResponse<ManagerUserDetailResponse> getUserDetail(Long userId) {
         AssertUtil.notNull(userId, "用户ID不能为空");
 
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("用户不存在"));
 
-        Map<String, Object> body = new LinkedHashMap<>();
-        body.put("id", user.getId());
-        body.put("email", user.getEmail());
-        body.put("username", user.getUsername());
-        body.put("phone", user.getPhone());
-        body.put("profilePhoto", user.getProfilePhoto());
-        body.put("score", user.getScore());
-        body.put("description", user.getDescription());
-        body.put("role", user.getRole());
-        body.put("status", user.getStatus());
-        body.put("emailVerifiedAt", user.getEmailVerifiedAt());
-        body.put("lastLoginAt", user.getLastLoginAt());
-        body.put("createAt", user.getCreateAt());
-        body.put("updateAt", user.getUpdateAt());
+        ManagerUserDetailResponse body = new ManagerUserDetailResponse();
+        body.setId(user.getId());
+        body.setEmail(user.getEmail());
+        body.setUsername(user.getUsername());
+        body.setPhone(user.getPhone());
+        body.setProfilePhoto(user.getProfilePhoto());
+        body.setScore(user.getScore());
+        body.setDescription(user.getDescription());
+        body.setRole(user.getRole());
+        body.setStatus(user.getStatus());
+        body.setEmailVerifiedAt(user.getEmailVerifiedAt());
+        body.setLastLoginAt(user.getLastLoginAt());
+        body.setCreateAt(user.getCreateAt());
+        body.setUpdateAt(user.getUpdateAt());
 
-        List<Map<String, Object>> addresses = new ArrayList<>();
+        List<AddressResponse> addresses = new ArrayList<>();
         for (Address address : addressRepository.findByUserId(user.getId())) {
-            Map<String, Object> item = new LinkedHashMap<>();
-            item.put("id", address.getId());
-            item.put("username", address.getUsername());
-            item.put("state", address.getState());
-            item.put("city", address.getCity());
-            item.put("address", address.getAddress());
-            item.put("zipcode", address.getZipcode());
-            item.put("phone", address.getPhone());
-            item.put("isDefault", address.getIsDefault());
-            item.put("status", address.getStatus());
-            item.put("createAt", address.getCreateAt());
-            item.put("updateAt", address.getUpdateAt());
-            addresses.add(item);
+            addresses.add(UserResponseMapper.toAddress(address));
         }
-        body.put("addresses", addresses);
+        body.setAddresses(addresses);
 
-        return success(body);
+        return ApiResponse.success(body);
     }
 }

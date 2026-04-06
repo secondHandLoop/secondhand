@@ -1,24 +1,18 @@
 package com.secondhand.message.service;
 
-import com.secondhand.common.doc.ApiParam;
-import com.secondhand.common.doc.Document;
-import com.secondhand.common.doc.Platform;
-import com.secondhand.common.output.ApiResponseHelper;
 import com.secondhand.common.tool.AssertUtil;
+import com.secondhand.message.dto.ApiResponse;
 import com.secondhand.message.entity.Message;
 import com.secondhand.message.repository.MessageRepository;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
-import java.util.Map;
 
+/**
+ * Hides messages per user by appending that user to the deleted set.
+ */
 @Service
-@Document(desc = "删除消息", module = "message", name = "删除消息", author = "Jeffrey",
-        platform = {Platform.APP, Platform.MANAGE, Platform.APPLETS}, creatAt = "2026-03-18",
-        request = {
-                @ApiParam(name = "messageId", value = "消息ID", dataType = "String")
-        })
-public class MessageDeleteService extends ApiResponseHelper {
+public class MessageDeleteService {
 
     private final MessageRepository messageRepository;
 
@@ -26,7 +20,10 @@ public class MessageDeleteService extends ApiResponseHelper {
         this.messageRepository = messageRepository;
     }
 
-    public Map<String, Object> service(Long currentUserId, String messageId) {
+    /**
+     * Marks a message as deleted for the current participant only.
+     */
+    public ApiResponse<Void> deleteMessage(Long currentUserId, String messageId) {
         AssertUtil.notNull(currentUserId, "用户未登录");
         AssertUtil.notNullOrBlank(messageId, "消息ID不能为空");
 
@@ -43,6 +40,6 @@ public class MessageDeleteService extends ApiResponseHelper {
         message.setUpdateAt(Instant.now().getEpochSecond());
         messageRepository.save(message);
 
-        return success();
+        return ApiResponse.success();
     }
 }

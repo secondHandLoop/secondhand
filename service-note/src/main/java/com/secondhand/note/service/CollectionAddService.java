@@ -1,26 +1,19 @@
 package com.secondhand.note.service;
 
-import com.secondhand.common.doc.ApiParam;
-import com.secondhand.common.doc.Document;
-import com.secondhand.common.doc.Platform;
 import com.secondhand.common.entity.Status;
-import com.secondhand.common.support.ReflectApiService;
 import com.secondhand.common.tool.AssertUtil;
+import com.secondhand.note.dto.ApiResponse;
 import com.secondhand.note.entity.Collection;
 import com.secondhand.note.repository.CollectionRepository;
 import com.secondhand.note.repository.NoteRepository;
 import jakarta.annotation.Resource;
-import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 
-import java.util.Map;
-
-@Document(desc = "增加收藏", module = "note", name = "增加收藏", author = "Jeffrey", platform = {Platform.MANAGE, Platform.APP, Platform.APPLETS}, creatAt = "2026-01-09",
-        request = {
-                @ApiParam(name = "noteId", value = "帖子ID", dataType = "long")
-        })
-
-@Component("collectionAddService1.0")
-public class CollectionAddService extends ReflectApiService {
+/**
+ * Creates or reactivates a user's collection record for a note.
+ */
+@Service
+public class CollectionAddService {
 
     @Resource
     private CollectionRepository collectionRepository;
@@ -28,7 +21,10 @@ public class CollectionAddService extends ReflectApiService {
     @Resource
     private NoteRepository noteRepository;
 
-    public Map<String, Object> service(Long currentUserId, Long noteId) {
+    /**
+     * Adds the target note to the current user's collection list.
+     */
+    public ApiResponse<Void> addCollection(Long currentUserId, Long noteId) {
 
         AssertUtil.isTrue(noteRepository.existsById(noteId), "帖子不存在");
 
@@ -42,7 +38,7 @@ public class CollectionAddService extends ReflectApiService {
                     .noteId(noteId)
                     .build();
             collectionRepository.save(c);
-            return success();
+            return ApiResponse.success();
         }
 
         if (c.getStatus() == Status.ACTIVE) {
@@ -53,6 +49,6 @@ public class CollectionAddService extends ReflectApiService {
         c.setUpdateAt(now);
         collectionRepository.save(c);
 
-        return success();
+        return ApiResponse.success();
     }
 }

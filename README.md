@@ -40,6 +40,20 @@ export R2_ENABLED='false'
 mvn -pl service-common,service-user,service-note,service-message -am compile
 ```
 
+## Swagger
+
+After starting a service, open its Swagger UI:
+
+- User service: `http://localhost:8081/swagger-ui.html`
+- Note service: `http://localhost:8082/swagger-ui.html`
+- Message service: `http://localhost:8083/swagger-ui.html`
+
+You can also access the raw OpenAPI JSON:
+
+- User service: `http://localhost:8081/v3/api-docs`
+- Note service: `http://localhost:8082/v3/api-docs`
+- Message service: `http://localhost:8083/v3/api-docs`
+
 ## Auth flow
 
 Registration:

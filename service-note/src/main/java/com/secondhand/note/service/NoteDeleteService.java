@@ -1,17 +1,18 @@
 package com.secondhand.note.service;
 
 import com.secondhand.common.entity.Status;
-import com.secondhand.common.support.ReflectApiService;
 import com.secondhand.common.tool.AssertUtil;
+import com.secondhand.note.dto.ApiResponse;
 import com.secondhand.note.entity.Note;
 import com.secondhand.note.repository.NoteRepository;
 import jakarta.annotation.Resource;
-import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 
-import java.util.Map;
-
-@Component("noteDeleteService1.0")
-public class NoteDeleteService extends ReflectApiService {
+/**
+ * Soft-deletes notes and removes their stored photos.
+ */
+@Service
+public class NoteDeleteService {
 
     @Resource
     NoteRepository noteRepository;
@@ -19,8 +20,11 @@ public class NoteDeleteService extends ReflectApiService {
     @Resource
     NotePhotoStorageService notePhotoStorageService;
 
-    public Map<String, Object> service(Long currentUserId,
-                                       Long noteId){
+    /**
+     * Deletes a note only when it belongs to the current user and is still active.
+     */
+    public ApiResponse<Void> deleteNote(Long currentUserId,
+                                        Long noteId){
         Note note = noteRepository.findById(noteId)
                 .orElseThrow(() -> new IllegalArgumentException("帖子不存在"));
 
@@ -32,6 +36,6 @@ public class NoteDeleteService extends ReflectApiService {
         noteRepository.save(note);
         notePhotoStorageService.deleteByUrls(note.getPhotoList());
 
-        return success();
+        return ApiResponse.success();
     }
 }
