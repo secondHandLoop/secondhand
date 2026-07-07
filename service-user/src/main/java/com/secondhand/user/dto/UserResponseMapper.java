@@ -65,6 +65,15 @@ public final class UserResponseMapper {
         return response;
     }
 
+    public static FollowUserResponse toFollowUser(User source, boolean isFollowing) {
+        FollowUserResponse response = new FollowUserResponse();
+        response.setId(source.getId());
+        response.setUsername(source.getUsername());
+        if (StringUtils.hasText(source.getProfilePhoto())) response.setProfilePhoto(source.getProfilePhoto());
+        response.setIsFollowing(isFollowing);
+        return response;
+    }
+
     public static ManagerUserListItemResponse toManagerUserListItem(User source) {
         ManagerUserListItemResponse response = new ManagerUserListItemResponse();
         response.setId(source.getId());

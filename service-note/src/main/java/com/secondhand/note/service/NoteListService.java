@@ -6,6 +6,8 @@ import com.secondhand.note.entity.Note;
 import com.secondhand.note.entity.TopCategory;
 import com.secondhand.note.openapi.schema.NoteListItemResponse;
 import com.secondhand.note.openapi.schema.NoteListResponse;
+import com.secondhand.note.repository.NoteRepository;
+import jakarta.annotation.Resource;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 
@@ -33,6 +35,12 @@ public class NoteListService {
 
     // ─── Proximity half-life: score = 0.5 at this distance ───
     private static final double PROXIMITY_HALF_LIFE_KM = 20.0;
+
+    @Resource
+    private NoteEmbeddingService noteEmbeddingService;
+
+    @Resource
+    private NoteRepository noteRepository;
 
     /**
      * Returns a page of notes visible to the current user.
@@ -96,20 +104,40 @@ public class NoteListService {
                 && delivery == null
                 && !Boolean.TRUE.equals(nearby);
 
-        // ── COUNT (always from full visible set) ──────────────────────────────
-        JdbcQueryBuilder countQ = isMyNotes
-                ? buildMyNoteQuery(currentUserId, true)
-                : buildVisibleNoteQuery(currentUserId, true);
-        if (!isExplore) {
-            applyFilters(countQ, keyword, topCategory, delivery);
-        }
-
-        Long total = countQ.total();
-        if (total == null || total == 0) {
-            return Collections.emptyList();
+        // ── SEMANTIC SEARCH ───────────────────────────────────────────────────
+        // When a free-text query is present, rank by embedding similarity so
+        // "black or gray table" also surfaces dark desks, best matches first.
+        // Returns null when embeddings are unavailable → fall through to keyword.
+        if (noteEmbeddingService.isReady()
+                && StringUtils.isNotBlank(keyword)
+                && !isMyNotes
+                && !isExplore
+                && !Boolean.TRUE.equals(nearby)) {
+            List<Long> ids = noteEmbeddingService.semanticSearchIds(
+                    keyword, currentUserId, topCategory, delivery, page, limit);
+            if (ids != null) {
+                if (ids.isEmpty()) {
+                    return Collections.emptyList();
+                }
+                Map<Long, Note> byId = new HashMap<>();
+                for (Note n : noteRepository.findByIdIn(ids)) {
+                    byId.put(n.getId(), n);
+                }
+                List<NoteListItemResponse> items = new ArrayList<>(ids.size());
+                for (Long id : ids) {
+                    Note n = byId.get(id);
+                    if (n != null) {
+                        items.add(NoteResponseMapper.toNoteListItem(n));
+                    }
+                }
+                return items;
+            }
         }
 
         // ── LIST ──────────────────────────────────────────────────────────────
+        // The response carries no total, so the previous per-request COUNT was
+        // discarded; each branch below returns an empty page naturally when there
+        // are no matches, so the extra full-table COUNT is dropped.
         List<Note> result;
 
         if (isExplore) {
@@ -126,10 +154,14 @@ public class NoteListService {
                     ? new HashSet<>(interestCategories)
                     : Collections.emptySet();
 
-            pool.sort((a, b) -> Double.compare(
-                    computeExploreScore(b, userLat, userLng, hasLatLng, interests, nowSeconds),
-                    computeExploreScore(a, userLat, userLng, hasLatLng, interests, nowSeconds)
-            ));
+            // Score each note once, then sort by the cached score. Scoring inside
+            // the comparator recomputed each note's score (and re-parsed its photo
+            // JSON) O(n log n) times per request.
+            Map<Note, Double> scoreCache = new IdentityHashMap<>();
+            for (Note note : pool) {
+                scoreCache.put(note, computeExploreScore(note, userLat, userLng, hasLatLng, interests, nowSeconds));
+            }
+            pool.sort((a, b) -> Double.compare(scoreCache.get(b), scoreCache.get(a)));
 
             result = slicePage(pool, page, limit);
 

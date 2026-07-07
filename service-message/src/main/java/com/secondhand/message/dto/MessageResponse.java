@@ -1,5 +1,6 @@
 package com.secondhand.message.dto;
 
+import com.secondhand.message.entity.Message;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 @Schema(description = "Message payload returned by message endpoints.")
@@ -16,6 +17,23 @@ public class MessageResponse {
     private String content;
     @Schema(description = "Unix timestamp in seconds when the message was created.", example = "1711992400")
     private Long createAt;
+
+    /**
+     * Builds a response from a persisted message document.
+     *
+     * @param message the source message
+     * @return the populated response
+     */
+    public static MessageResponse from(Message message) {
+        MessageResponse item = new MessageResponse();
+        item.setId(message.getId());
+        item.setSenderId(message.getSenderId());
+        item.setReceiverId(message.getReceiverId());
+        item.setConversationId(message.getConversationId());
+        item.setContent(message.getContent());
+        item.setCreateAt(message.getCreateAt());
+        return item;
+    }
 
     public String getId() { return id; }
     public void setId(String id) { this.id = id; }

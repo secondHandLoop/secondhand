@@ -1,0 +1,213 @@
+name: secondhand
+
+x-backend-environment: &backend-environment
+  AUTH_JWT_SECRET: ${AUTH_JWT_SECRET:-secondhand-local-development-secret-change-me}
+  AUTH_JWT_ISSUER: ${AUTH_JWT_ISSUER:-secondhand}
+  AUTH_JWT_ACCESS_TOKEN_EXPIRATION_SECONDS: ${AUTH_JWT_ACCESS_TOKEN_EXPIRATION_SECONDS:-604800}
+  AUTH_EMAIL_VERIFICATION_CODE_EXPIRATION_SECONDS: ${AUTH_EMAIL_VERIFICATION_CODE_EXPIRATION_SECONDS:-600}
+  AUTH_EMAIL_INACTIVE_LOGIN_THRESHOLD_SECONDS: ${AUTH_EMAIL_INACTIVE_LOGIN_THRESHOLD_SECONDS:-2592000}
+  RESEND_API_KEY: ${RESEND_API_KEY:-}
+  AUTH_EMAIL_FROM: ${AUTH_EMAIL_FROM:-Acme <onboarding@resend.dev>}
+  R2_ENABLED: ${R2_ENABLED:-false}
+  R2_ENDPOINT: ${R2_ENDPOINT:-}
+  R2_REGION: ${R2_REGION:-auto}
+  R2_BUCKET: ${R2_BUCKET:-}
+  R2_ACCESS_KEY: ${R2_ACCESS_KEY:-}
+  R2_SECRET_KEY: ${R2_SECRET_KEY:-}
+  R2_PUBLIC_BASE_URL: ${R2_PUBLIC_BASE_URL:-}
+  R2_NOTE_PREFIX: ${R2_NOTE_PREFIX:-notes}
+  R2_AVATAR_PREFIX: ${R2_AVATAR_PREFIX:-avatars}
+
+x-backend-service: &backend-service
+  restart: unless-stopped
+  networks:
+    - secondhand
+
+services:
+  postgres:
+    # pgvector image = Postgres 16 + the "vector" extension (semantic search).
+    # Drop-in replacement for postgres:16; keeps the same postgres_data volume.
+    image: pgvector/pgvector:pg16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: secondhand
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./db/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d secondhand"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    networks:
+      - secondhand
+
+  mongo:
+    image: mongo:7
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    networks:
+      - secondhand
+
+  adminer:
+    image: adminer:4
+    restart: unless-stopped
+    environment:
+      ADMINER_DEFAULT_SERVER: postgres
+    ports:
+      - "8088:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - secondhand
+
+  user-service:
+    <<: *backend-service
+    build:
+      context: .
+      dockerfile: Dockerfile.orbstack
+      target: service-user
+    environment:
+      <<: *backend-environment
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/secondhand?currentSchema=user_svc
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: postgres
+    ports:
+      - "7101:7101"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  note-service:
+    <<: *backend-service
+    build:
+      context: .
+      dockerfile: Dockerfile.orbstack
+      target: service-note
+    environment:
+      <<: *backend-environment
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/secondhand?currentSchema=note_svc
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: postgres
+      GEOCODING_NOMINATIM_USER_AGENT: ${GEOCODING_NOMINATIM_USER_AGENT:-secondhand-app/1.0}
+      GEOCODING_NOMINATIM_REFERER: ${GEOCODING_NOMINATIM_REFERER:-}
+      GEOCODING_NOMINATIM_CONTACT_EMAIL: ${GEOCODING_NOMINATIM_CONTACT_EMAIL:-}
+    ports:
+      - "7102:7102"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  message-service:
+    <<: *backend-service
+    build:
+      context: .
+      dockerfile: Dockerfile.orbstack
+      target: service-message
+    environment:
+      <<: *backend-environment
+      MONGODB_URI: mongodb://mongo:27017/secondhand_message
+    ports:
+      - "7103:7103"
+    depends_on:
+      mongo:
+        condition: service_healthy
+
+  promotion-service:
+    <<: *backend-service
+    build:
+      context: .
+      dockerfile: Dockerfile.orbstack
+      target: service-promotion
+    environment:
+      <<: *backend-environment
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/secondhand?currentSchema=promotion_svc
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: postgres
+    ports:
+      - "7104:7104"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  gateway:
+    <<: *backend-service
+    build:
+      context: .
+      dockerfile: Dockerfile.orbstack
+      target: gateway
+    environment:
+      SPRING_CLOUD_GATEWAY_ROUTES_0_ID: user
+      SPRING_CLOUD_GATEWAY_ROUTES_0_URI: http://user-service:7101
+      SPRING_CLOUD_GATEWAY_ROUTES_0_PREDICATES_0: Path=/user/**
+      SPRING_CLOUD_GATEWAY_ROUTES_1_ID: message
+      SPRING_CLOUD_GATEWAY_ROUTES_1_URI: http://message-service:7103
+      SPRING_CLOUD_GATEWAY_ROUTES_1_PREDICATES_0: Path=/message/**
+      SPRING_CLOUD_GATEWAY_ROUTES_2_ID: note
+      SPRING_CLOUD_GATEWAY_ROUTES_2_URI: http://note-service:7102
+      SPRING_CLOUD_GATEWAY_ROUTES_2_PREDICATES_0: Path=/note/**
+    ports:
+      - "7100:7100"
+    depends_on:
+      - user-service
+      - note-service
+      - message-service
+
+  webpage:
+    build:
+      context: ../secondhand-Web
+      dockerfile: Dockerfile.orbstack
+      target: webpage
+      args:
+        VITE_USER_API_BASE_URL: http://localhost:7101
+        VITE_NOTE_API_BASE_URL: http://localhost:7102
+        VITE_MESSAGE_API_BASE_URL: http://localhost:7103
+    restart: unless-stopped
+    ports:
+      - "7200:80"
+    depends_on:
+      - user-service
+      - note-service
+      - message-service
+    networks:
+      - secondhand
+
+  admin:
+    build:
+      context: ../secondhand-Web
+      dockerfile: Dockerfile.orbstack
+      target: admin
+      args:
+        VITE_USER_API_BASE_URL: http://localhost:7101
+        VITE_NOTE_API_BASE_URL: http://localhost:7102
+        VITE_MESSAGE_API_BASE_URL: http://localhost:7103
+    restart: unless-stopped
+    ports:
+      - "7201:80"
+    depends_on:
+      - user-service
+      - note-service
+      - message-service
+    networks:
+      - secondhand
+
+volumes:
+  postgres_data:
+  mongo_data:
+
+networks:
+  secondhand:
+    driver: bridge

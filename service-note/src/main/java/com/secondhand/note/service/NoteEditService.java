@@ -32,6 +32,9 @@ public class NoteEditService {
     @Resource
     private NotePhotoStorageService notePhotoStorageService;
 
+    @Resource
+    private NoteEmbeddingService noteEmbeddingService;
+
     /**
      * Applies partial updates to a note owned by the current user.
      */
@@ -97,6 +100,7 @@ public class NoteEditService {
 
         note.setUpdateAt(System.currentTimeMillis() / 1000);
         noteRepository.save(note);
+        noteEmbeddingService.embedNoteAsync(note);
         if (deletePhotoUrls != null && !deletePhotoUrls.isEmpty()) {
             notePhotoStorageService.deleteByUrls(deletePhotoUrls);
         }

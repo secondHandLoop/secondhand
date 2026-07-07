@@ -1,6 +1,7 @@
 package com.secondhand.user.service;
 
 import com.secondhand.common.exception.ApiException;
+import jakarta.annotation.PreDestroy;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
@@ -23,6 +24,9 @@ public class UserPhotoUploadService {
 
     private final R2StorageProperties properties;
 
+    /** Lazily built once and reused across uploads instead of per request. */
+    private volatile S3Client s3Client;
+
     public UserPhotoUploadService(R2StorageProperties properties) {
         this.properties = properties;
     }
@@ -40,12 +44,14 @@ public class UserPhotoUploadService {
 
         String key = properties.getAvatarPrefix() + "/" + userId + "/" + UUID.randomUUID() + "-" + sanitize(file.getOriginalFilename());
 
-        try (S3Client s3 = buildClient()) {
-            s3.putObject(
+        try {
+            s3Client().putObject(
                     PutObjectRequest.builder()
                             .bucket(properties.getBucket())
                             .key(key)
                             .contentType(file.getContentType())
+                            // UUID keys are never rewritten; cache forever.
+                            .cacheControl("public, max-age=31536000, immutable")
                             .build(),
                     RequestBody.fromBytes(file.getBytes())
             );
@@ -54,6 +60,36 @@ public class UserPhotoUploadService {
         }
 
         return buildUrl(key);
+    }
+
+    /**
+     * Returns the shared S3 client, building it lazily on first use so a client
+     * (and its connection pool) is created once per service, not per upload.
+     *
+     * @return the reused S3 client
+     */
+    private S3Client s3Client() {
+        S3Client client = this.s3Client;
+        if (client == null) {
+            synchronized (this) {
+                client = this.s3Client;
+                if (client == null) {
+                    client = buildClient();
+                    this.s3Client = client;
+                }
+            }
+        }
+        return client;
+    }
+
+    /**
+     * Closes the shared S3 client on shutdown.
+     */
+    @PreDestroy
+    void closeClient() {
+        if (s3Client != null) {
+            s3Client.close();
+        }
     }
 
     /**

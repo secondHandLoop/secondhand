@@ -7,6 +7,7 @@ import com.secondhand.user.entity.Address;
 import com.secondhand.user.repository.AddressRepository;
 import jakarta.annotation.Resource;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -21,7 +22,12 @@ public class AddressAddService {
 
     /**
      * Adds an address for the current user and optionally promotes it to default.
+     *
+     * <p>Annotated {@code @Transactional} so clearing the previous default and
+     * inserting the new default address commit atomically; a failure on the
+     * insert must not leave the user with zero default addresses.
      */
+    @Transactional
     public ApiResponse<Void> addAddress(Long currentUserId, String username, String state, String city,
                                         String address, Integer zipcode, Boolean isDefault, String phone) {
 

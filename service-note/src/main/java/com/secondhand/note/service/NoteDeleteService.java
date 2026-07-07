@@ -28,7 +28,7 @@ public class NoteDeleteService {
         Note note = noteRepository.findById(noteId)
                 .orElseThrow(() -> new IllegalArgumentException("帖子不存在"));
 
-        AssertUtil.isTrue(note.getUserId() == currentUserId, "无权限删除该帖子");
+        AssertUtil.isTrue(currentUserId != null && currentUserId.equals(note.getUserId()), "无权限删除该帖子");
 
         AssertUtil.isTrue(note.getStatus() != Status.DEL, "帖子已删除");
 

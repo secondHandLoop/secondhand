@@ -1,8 +1,101 @@
 # secondhand
 
-## Local services
+## OrbStack full development environment
 
-Start the local databases:
+The project includes an OrbStack-compatible Docker Compose environment. It starts PostgreSQL, MongoDB, Adminer, all backend services, the gateway, the customer webpage, and the admin dashboard.
+
+### Prerequisites
+
+- OrbStack installed and running
+- The `secondhand-backend` and `secondhand-Web` directories next to each other
+
+Expected directory layout:
+
+```text
+secondhand/
+├── secondhand-backend/
+└── secondhand-Web/
+```
+
+### First start
+
+```bash
+cd secondhand-backend
+
+# Only needed when .env does not already exist.
+cp .env.orbstack.example .env
+
+docker compose -f compose.orbstack.yml up -d --build
+```
+
+The first build downloads the Java, Node.js, and service dependencies, so it takes longer than later starts.
+
+### Service URLs
+
+| Service | URL |
+| --- | --- |
+| Webpage | `http://localhost:7200` |
+| Admin dashboard | `http://localhost:7201` |
+| Gateway | `http://localhost:7100` |
+| User service | `http://localhost:7101` |
+| Note service | `http://localhost:7102` |
+| Message service | `http://localhost:7103` |
+| Promotion service | `http://localhost:7104` |
+| Adminer | `http://localhost:8088` |
+| PostgreSQL | `localhost:5432` |
+| MongoDB | `localhost:27017` |
+
+For Adminer, use `postgres` as the server, database, username, and password.
+
+### Daily commands
+
+```bash
+# Start existing containers.
+docker compose -f compose.orbstack.yml up -d
+
+# Show container status.
+docker compose -f compose.orbstack.yml ps
+
+# Follow logs from every service.
+docker compose -f compose.orbstack.yml logs -f
+
+# Follow one service.
+docker compose -f compose.orbstack.yml logs -f user-service
+
+# Rebuild after source code changes.
+docker compose -f compose.orbstack.yml up -d --build
+
+# Stop the environment without deleting database data.
+docker compose -f compose.orbstack.yml down
+```
+
+To completely reset PostgreSQL and MongoDB, including all local data:
+
+```bash
+docker compose -f compose.orbstack.yml down -v
+```
+
+### iOS with the OrbStack backend
+
+The native iOS app still runs through Xcode on macOS; it is not run inside a container. The backend ports are exposed by OrbStack, so an iOS simulator can use the normal localhost API configuration.
+
+For a physical iPhone, set your Mac's LAN IP in `secondhand-Web/apps/web/.env.local`, then rebuild the Capacitor app:
+
+```dotenv
+VITE_API_HOST=192.168.1.100
+```
+
+```bash
+cd ../secondhand-Web/apps/web
+pnpm cap:build
+pnpm cap:open:ios
+```
+
+The Mac and iPhone must be on the same network. Also add the LAN IP to `server.allowNavigation` in `apps/web/capacitor.config.ts` if it is not already allowed.
+
+## Databases only
+
+If you want to run Java and frontend services directly on macOS, start only the local databases with the smaller existing Compose file:
 
 ```bash
 docker compose up -d
@@ -44,15 +137,15 @@ mvn -pl service-common,service-user,service-note,service-message -am compile
 
 After starting a service, open its Swagger UI:
 
-- User service: `http://localhost:8081/swagger-ui.html`
-- Note service: `http://localhost:8082/swagger-ui.html`
-- Message service: `http://localhost:8083/swagger-ui.html`
+- User service: `http://localhost:7101/swagger-ui.html`
+- Note service: `http://localhost:7102/swagger-ui.html`
+- Message service: `http://localhost:7103/swagger-ui.html`
 
 You can also access the raw OpenAPI JSON:
 
-- User service: `http://localhost:8081/v3/api-docs`
-- Note service: `http://localhost:8082/v3/api-docs`
-- Message service: `http://localhost:8083/v3/api-docs`
+- User service: `http://localhost:7101/v3/api-docs`
+- Note service: `http://localhost:7102/v3/api-docs`
+- Message service: `http://localhost:7103/v3/api-docs`
 
 ## Auth flow
 

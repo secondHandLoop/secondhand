@@ -4,6 +4,7 @@ import com.secondhand.common.controller.RequestUserIdResolver;
 import com.secondhand.user.dto.AddressResponse;
 import com.secondhand.user.dto.ApiResponse;
 import com.secondhand.user.dto.ApiErrorResponse;
+import com.secondhand.user.dto.FollowUserResponse;
 import com.secondhand.user.dto.AuthSuccessResponse;
 import com.secondhand.user.dto.ManagerCreateResponse;
 import com.secondhand.user.dto.ManagerUserDetailResponse;
@@ -19,6 +20,7 @@ import com.secondhand.user.service.AddressAddService;
 import com.secondhand.user.service.AddressDeleteService;
 import com.secondhand.user.service.AddressEditService;
 import com.secondhand.user.service.AddressListService;
+import com.secondhand.user.service.FollowService;
 import com.secondhand.user.service.ManagerUserDetailService;
 import com.secondhand.user.service.ManagerUserListService;
 import com.secondhand.user.service.ManagerAddService;
@@ -68,6 +70,7 @@ public class UserController {
     private final AddressAddService addressAddService;
     private final AddressEditService addressEditService;
     private final AddressDeleteService addressDeleteService;
+    private final FollowService followService;
 
     public UserController(RequestUserIdResolver userIdResolver,
                           UserRegisterService userRegisterService,
@@ -82,7 +85,8 @@ public class UserController {
                           AddressListService addressListService,
                           AddressAddService addressAddService,
                           AddressEditService addressEditService,
-                          AddressDeleteService addressDeleteService) {
+                          AddressDeleteService addressDeleteService,
+                          FollowService followService) {
         this.userIdResolver = userIdResolver;
         this.userRegisterService = userRegisterService;
         this.userLoginService = userLoginService;
@@ -97,6 +101,7 @@ public class UserController {
         this.addressAddService = addressAddService;
         this.addressEditService = addressEditService;
         this.addressDeleteService = addressDeleteService;
+        this.followService = followService;
     }
 
     @Operation(summary = "Request a registration code", description = "Sends an email verification code to an email address that is not yet registered.")
@@ -372,6 +377,65 @@ public class UserController {
                                            @Parameter(description = "Address id to delete.") @PathVariable Long id) {
         Long currentUserId = userIdResolver.requireUserId(authorizationHeader);
         return addressDeleteService.deleteAddress(currentUserId, id);
+    }
+
+    @Operation(summary = "Follow a user", description = "Makes the authenticated user follow another user.")
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Followed successfully.", useReturnTypeSchema = true),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "The follow request is invalid.", content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "Authentication is required.", content = @Content(schema = @Schema(implementation = ApiErrorResponse.class)))
+    })
+    @PostMapping("/users/{id}/follow")
+    public ApiResponse<Void> followUser(@RequestHeader("Authorization") String authorizationHeader,
+                                        @Parameter(description = "User id to follow.") @PathVariable Long id) {
+        Long currentUserId = userIdResolver.requireUserId(authorizationHeader);
+        return followService.follow(currentUserId, id);
+    }
+
+    @Operation(summary = "Unfollow a user", description = "Makes the authenticated user stop following another user.")
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Unfollowed successfully.", useReturnTypeSchema = true),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "Authentication is required.", content = @Content(schema = @Schema(implementation = ApiErrorResponse.class)))
+    })
+    @DeleteMapping("/users/{id}/follow")
+    public ApiResponse<Void> unfollowUser(@RequestHeader("Authorization") String authorizationHeader,
+                                          @Parameter(description = "User id to unfollow.") @PathVariable Long id) {
+        Long currentUserId = userIdResolver.requireUserId(authorizationHeader);
+        return followService.unfollow(currentUserId, id);
+    }
+
+    @Operation(summary = "Get follow status", description = "Reports whether the authenticated user follows the given user.")
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Follow status returned successfully.", useReturnTypeSchema = true),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "Authentication is required.", content = @Content(schema = @Schema(implementation = ApiErrorResponse.class)))
+    })
+    @GetMapping("/users/{id}/follow-status")
+    public ApiResponse<Boolean> followStatus(@RequestHeader("Authorization") String authorizationHeader,
+                                             @Parameter(description = "User id to check.") @PathVariable Long id) {
+        Long currentUserId = userIdResolver.requireUserId(authorizationHeader);
+        return followService.isFollowing(currentUserId, id);
+    }
+
+    @Operation(summary = "List following", description = "Returns the users the authenticated user is following.")
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Following list returned successfully.", useReturnTypeSchema = true),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "Authentication is required.", content = @Content(schema = @Schema(implementation = ApiErrorResponse.class)))
+    })
+    @GetMapping("/following")
+    public ApiResponse<List<FollowUserResponse>> listFollowing(@RequestHeader("Authorization") String authorizationHeader) {
+        Long currentUserId = userIdResolver.requireUserId(authorizationHeader);
+        return followService.listFollowing(currentUserId);
+    }
+
+    @Operation(summary = "List followers", description = "Returns the users who follow the authenticated user.")
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Followers list returned successfully.", useReturnTypeSchema = true),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "Authentication is required.", content = @Content(schema = @Schema(implementation = ApiErrorResponse.class)))
+    })
+    @GetMapping("/followers")
+    public ApiResponse<List<FollowUserResponse>> listFollowers(@RequestHeader("Authorization") String authorizationHeader) {
+        Long currentUserId = userIdResolver.requireUserId(authorizationHeader);
+        return followService.listFollowers(currentUserId);
     }
 
     @Schema(name = "RegisterCodeRequest", description = "Request payload used to start email verification during registration.")

@@ -1,7 +1,10 @@
 server:
-  port: 8083
+  port: 7103
 
 spring:
   data:
     mongodb:
       uri: ${MONGODB_URI:mongodb://localhost:27017/secondhand_message}
+      # Create the @CompoundIndex definitions on Message at startup so inbox and
+      # conversation queries are index-backed instead of full collection scans.
+      auto-index-creation: true

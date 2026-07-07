@@ -3,6 +3,7 @@ package com.secondhand.user.service;
 import com.secondhand.common.exception.ApiException;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.springframework.web.client.RestClient;
@@ -21,8 +22,14 @@ public class ResendEmailService {
 
     public ResendEmailService(AuthEmailProperties authEmailProperties) {
         this.authEmailProperties = authEmailProperties;
+        // Bound the outbound call so a slow/hung Resend API cannot pin request
+        // threads indefinitely and exhaust the Tomcat worker pool.
+        SimpleClientHttpRequestFactory requestFactory = new SimpleClientHttpRequestFactory();
+        requestFactory.setConnectTimeout(3000);
+        requestFactory.setReadTimeout(5000);
         this.restClient = RestClient.builder()
                 .baseUrl("https://api.resend.com")
+                .requestFactory(requestFactory)
                 .build();
     }
 

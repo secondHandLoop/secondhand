@@ -2,7 +2,9 @@ version: "3.9"
 
 services:
   postgres:
-    image: postgres:16
+    # pgvector image = Postgres 16 + the "vector" extension (for semantic search).
+    # Drop-in replacement for postgres:16; keeps the same pg_data volume/data.
+    image: pgvector/pgvector:pg16
     container_name: pg-secondhand
     restart: unless-stopped
     environment:

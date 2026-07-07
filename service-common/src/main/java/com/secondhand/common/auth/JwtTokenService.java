@@ -53,7 +53,14 @@ public class JwtTokenService {
         return role == null ? null : String.valueOf(role);
     }
 
-    private Claims parseClaims(String token) {
+    /**
+     * Verifies the token signature once and returns all of its claims, so callers
+     * needing both the subject and role do not verify the signature twice.
+     *
+     * @param token the raw JWT (without the Bearer prefix)
+     * @return the verified claims
+     */
+    public Claims parseClaims(String token) {
         try {
             return Jwts.parser()
                     .verifyWith(signingKey)

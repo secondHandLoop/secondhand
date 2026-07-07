@@ -42,8 +42,11 @@ public class MessageConversationListService {
         );
         Criteria visible = Criteria.where("deletedBy").ne(currentUserId);
 
+        // Order by createAt (immutable) rather than updateAt: a soft delete bumps
+        // updateAt, which would otherwise resurface an old message as the "last"
+        // one in the other participant's inbox.
         Query query = new Query(new Criteria().andOperator(participant, visible))
-                .with(Sort.by(Sort.Direction.DESC, "updateAt"));
+                .with(Sort.by(Sort.Direction.DESC, "createAt"));
 
         List<Message> messages = mongoTemplate.find(query, Message.class);
         LinkedHashMap<String, ConversationResponse> conversations = new LinkedHashMap<>();

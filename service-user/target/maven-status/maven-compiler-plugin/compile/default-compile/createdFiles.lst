@@ -14,6 +14,7 @@ com/secondhand/user/service/AuthEmailProperties.class
 com/secondhand/user/service/UserRegisterService.class
 com/secondhand/user/service/AddressDeleteService.class
 com/secondhand/user/entity/Role.class
+com/secondhand/user/service/UserPasswordResetService.class
 com/secondhand/user/entity/Address$AddressBuilder.class
 com/secondhand/user/UserServiceApplication.class
 com/secondhand/user/entity/User.class

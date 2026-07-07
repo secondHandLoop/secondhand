@@ -23,6 +23,9 @@ public class NoteAddService {
     @Resource
     private com.secondhand.common.geo.GeocodingService geocodingService;
 
+    @Resource
+    private NoteEmbeddingService noteEmbeddingService;
+
     /**
      * Persists a new note owned by the current user.
      */
@@ -65,6 +68,7 @@ public class NoteAddService {
         }
 
         noteRepository.save(note);
+        noteEmbeddingService.embedNoteAsync(note);
         return ApiResponse.success();
     }
 }

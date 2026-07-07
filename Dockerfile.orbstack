@@ -1,0 +1,54 @@
+# syntax=docker/dockerfile:1.7
+
+FROM maven:3.9.9-eclipse-temurin-21 AS build
+
+WORKDIR /workspace
+
+COPY pom.xml ./
+COPY gateway/pom.xml gateway/pom.xml
+COPY service-common/pom.xml service-common/pom.xml
+COPY service-user/pom.xml service-user/pom.xml
+COPY service-note/pom.xml service-note/pom.xml
+COPY service-message/pom.xml service-message/pom.xml
+COPY service-promotion/pom.xml service-promotion/pom.xml
+
+COPY gateway/src gateway/src
+COPY service-common/src service-common/src
+COPY service-user/src service-user/src
+COPY service-note/src service-note/src
+COPY service-message/src service-message/src
+COPY service-promotion/src service-promotion/src
+
+# Compile the reactor once, then turn each application jar into an executable
+# Spring Boot jar. Every runtime target below reuses this shared build stage.
+RUN --mount=type=cache,target=/root/.m2 \
+    mvn -B install -DskipTests && \
+    mvn -B \
+      -pl gateway,service-user,service-note,service-message,service-promotion \
+      package \
+      org.springframework.boot:spring-boot-maven-plugin:3.3.4:repackage \
+      -DskipTests
+
+FROM eclipse-temurin:21-jre-jammy AS runtime
+
+RUN useradd --create-home --uid 10001 spring
+USER spring
+WORKDIR /app
+
+EXPOSE 7100
+ENTRYPOINT ["java", "-jar", "/app/app.jar"]
+
+FROM runtime AS gateway
+COPY --from=build --chown=spring:spring /workspace/gateway/target/gateway-1.0.0-SNAPSHOT.jar /app/app.jar
+
+FROM runtime AS service-user
+COPY --from=build --chown=spring:spring /workspace/service-user/target/service-user-1.0.0-SNAPSHOT.jar /app/app.jar
+
+FROM runtime AS service-note
+COPY --from=build --chown=spring:spring /workspace/service-note/target/service-note-1.0.0-SNAPSHOT.jar /app/app.jar
+
+FROM runtime AS service-message
+COPY --from=build --chown=spring:spring /workspace/service-message/target/service-message-1.0.0-SNAPSHOT.jar /app/app.jar
+
+FROM runtime AS service-promotion
+COPY --from=build --chown=spring:spring /workspace/service-promotion/target/service-promotion-1.0.0-SNAPSHOT.jar /app/app.jar

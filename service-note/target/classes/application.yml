@@ -1,5 +1,5 @@
 server:
-  port: 8082
+  port: 7102
 
 spring:
   servlet:
@@ -38,3 +38,12 @@ geocoding:
     user-agent: ${GEOCODING_NOMINATIM_USER_AGENT:secondhand-app/1.0}
     referer: ${GEOCODING_NOMINATIM_REFERER:}
     contact-email: ${GEOCODING_NOMINATIM_CONTACT_EMAIL:}
+
+ai:
+  gemini:
+    enabled: ${AI_GEMINI_ENABLED:false}
+    api-key: ${GEMINI_API_KEY:}
+    base-url: ${GEMINI_BASE_URL:https://generativelanguage.googleapis.com/v1beta}
+    vision-model: ${GEMINI_VISION_MODEL:gemini-2.5-flash-lite}
+    embedding-model: ${GEMINI_EMBEDDING_MODEL:gemini-embedding-001}
+    embedding-dimensions: ${GEMINI_EMBEDDING_DIMENSIONS:768}

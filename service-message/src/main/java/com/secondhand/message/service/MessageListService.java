@@ -52,14 +52,7 @@ public class MessageListService {
         List<Message> messages = mongoTemplate.find(listQuery, Message.class);
         List<MessageResponse> body = new ArrayList<>();
         for (Message message : messages) {
-            MessageResponse item = new MessageResponse();
-            item.setId(message.getId());
-            item.setSenderId(message.getSenderId());
-            item.setReceiverId(message.getReceiverId());
-            item.setConversationId(message.getConversationId());
-            item.setContent(message.getContent());
-            item.setCreateAt(message.getCreateAt());
-            body.add(item);
+            body.add(MessageResponse.from(message));
         }
 
         PageInfoResponse pageInfo = new PageInfoResponse();

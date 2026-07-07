@@ -42,14 +42,7 @@ public class MessageAddService {
 
         messageRepository.save(message);
 
-        MessageResponse body = new MessageResponse();
-        body.setId(message.getId());
-        body.setSenderId(message.getSenderId());
-        body.setReceiverId(message.getReceiverId());
-        body.setConversationId(message.getConversationId());
-        body.setContent(message.getContent());
-        body.setCreateAt(message.getCreateAt());
-        return ApiResponse.success(body);
+        return ApiResponse.success(MessageResponse.from(message));
     }
 
     /**

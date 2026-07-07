@@ -1,0 +1,7 @@
+.git
+.idea
+.claude
+.env
+logs
+**/target
+**/.DS_Store

@@ -8,6 +8,7 @@ import com.secondhand.note.dto.ManagerNoteListQuery;
 import com.secondhand.note.dto.NoteCreateRequest;
 import com.secondhand.note.dto.NoteDetailResponseBody;
 import com.secondhand.note.dto.NoteEditRequest;
+import com.secondhand.note.dto.ImageAttributesResponse;
 import com.secondhand.note.dto.NoteIdRequest;
 import com.secondhand.note.dto.PaginationQuery;
 import com.secondhand.note.dto.UploadMediaResponse;
@@ -22,6 +23,8 @@ import com.secondhand.note.service.NoteDeleteService;
 import com.secondhand.note.service.NoteDetailService;
 import com.secondhand.note.service.NoteEditService;
 import com.secondhand.note.service.NoteListService;
+import com.secondhand.note.service.NoteEmbeddingService;
+import com.secondhand.note.service.PhotoAnalyzeService;
 import com.secondhand.note.service.ManagerNoteDetailService;
 import com.secondhand.note.service.ManagerNoteListService;
 import com.secondhand.note.service.NotePhotoStorageService;
@@ -46,7 +49,9 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.Collections;
 import java.util.List;
@@ -71,6 +76,8 @@ public class NoteController {
     private final HistoryAddService historyAddService;
     private final HistoryDeleteService historyDeleteService;
     private final HistoryListService historyListService;
+    private final PhotoAnalyzeService photoAnalyzeService;
+    private final NoteEmbeddingService noteEmbeddingService;
 
     public NoteController(RequestUserIdResolver userIdResolver,
                           NoteAddService noteAddService,
@@ -86,7 +93,9 @@ public class NoteController {
                           CollectionListService collectionListService,
                           HistoryAddService historyAddService,
                           HistoryDeleteService historyDeleteService,
-                          HistoryListService historyListService) {
+                          HistoryListService historyListService,
+                          PhotoAnalyzeService photoAnalyzeService,
+                          NoteEmbeddingService noteEmbeddingService) {
         this.userIdResolver = userIdResolver;
         this.noteAddService = noteAddService;
         this.noteEditService = noteEditService;
@@ -102,6 +111,8 @@ public class NoteController {
         this.historyAddService = historyAddService;
         this.historyDeleteService = historyDeleteService;
         this.historyListService = historyListService;
+        this.photoAnalyzeService = photoAnalyzeService;
+        this.noteEmbeddingService = noteEmbeddingService;
     }
 
     @Operation(
@@ -133,6 +144,34 @@ public class NoteController {
                 query.getTopCategory(), query.getDelivery(), query.getMyNotes(), query.getExplore(),
                 query.getInterestCategories(), query.getNearby(), query.getUserLat(), query.getUserLng(),
                 query.getUserCity(), query.getUserState(), query.getUserZipcode());
+    }
+
+    @Operation(summary = "Analyze a listing photo",
+            description = "Identifies the item in a photo (title, category, condition, colors) to auto-fill the create-listing form.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Photo analyzed successfully.", useReturnTypeSchema = true),
+            @ApiResponse(responseCode = "400", description = "The uploaded file is invalid.", content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+            @ApiResponse(responseCode = "503", description = "Image identification is not enabled.", content = @Content(schema = @Schema(implementation = ApiErrorResponse.class)))
+    })
+    @PostMapping(value = "/notes/analyze-photo", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public com.secondhand.note.dto.ApiResponse<ImageAttributesResponse> analyzePhoto(
+            @RequestHeader("Authorization") String authorizationHeader,
+            @RequestParam("photo") MultipartFile photo) {
+        userIdResolver.requireUserId(authorizationHeader);
+        return photoAnalyzeService.analyze(photo);
+    }
+
+    @Operation(summary = "Backfill note embeddings",
+            description = "Generates embeddings for active notes that don't have one yet. Run once after enabling semantic search.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Backfill completed; body is the number of notes embedded.", useReturnTypeSchema = true),
+            @ApiResponse(responseCode = "401", description = "Authentication is required.", content = @Content(schema = @Schema(implementation = ApiErrorResponse.class)))
+    })
+    @PostMapping("/notes/reembed")
+    public com.secondhand.note.dto.ApiResponse<Integer> reembed(
+            @RequestHeader("Authorization") String authorizationHeader) {
+        userIdResolver.requireUserId(authorizationHeader);
+        return com.secondhand.note.dto.ApiResponse.success(noteEmbeddingService.reembedMissing());
     }
 
     @Operation(

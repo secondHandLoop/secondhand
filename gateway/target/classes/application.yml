@@ -1,5 +1,5 @@
 server:
-  port: 8080
+  port: 7100
 
 spring:
   application:
@@ -10,37 +10,35 @@ spring:
         cors-configurations:
           "[/**]":
             allowedOrigins:
-              - "http://localhost:5173"
-              - "http://127.0.0.1:5173"
+              - "http://localhost:7200"
+              - "http://127.0.0.1:7200"
+              - "http://localhost:7201"
+              - "http://127.0.0.1:7201"
               - "http://localhost:4173"
               - "http://127.0.0.1:4173"
-              - "http://100.107.78.159:5173"
+              - "http://100.107.78.159:7200"
               - "capacitor://localhost"
             allowedMethods:
               - GET
               - POST
               - PUT
+              - PATCH
               - DELETE
               - OPTIONS
             allowedHeaders:
               - "*"
             allowCredentials: true
       routes:
+        # StripPrefix=0 removed: it strips zero path segments, i.e. a no-op.
         - id: user
-          uri: http://localhost:8081
+          uri: http://localhost:7101
           predicates:
             - Path=/user/**
-          filters:
-            - StripPrefix=0
         - id: message
-          uri: http://localhost:8083
+          uri: http://localhost:7103
           predicates:
             - Path=/message/**
-          filters:
-            - StripPrefix=0
         - id: note
-          uri: http://localhost:8082
+          uri: http://localhost:7102
           predicates:
             - Path=/note/**
-          filters:
-            - StripPrefix=0

@@ -2,6 +2,7 @@ package com.secondhand.common.controller;
 
 import com.secondhand.common.auth.JwtTokenService;
 import com.secondhand.common.exception.ApiException;
+import io.jsonwebtoken.Claims;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
@@ -30,12 +31,14 @@ public class RequestUserIdResolver {
 
     public Long requireManagerUserId(String authorizationHeader) {
         String token = extractBearerToken(requireAuthorizationHeader(authorizationHeader));
-        Long userId = jwtTokenService.parseUserId(token);
-        String role = jwtTokenService.parseRole(token);
-        if (!"MANAGER".equals(role)) {
+        // Verify the signature once and read both the subject and role from the
+        // same claims, instead of parsing (and re-verifying) the token twice.
+        Claims claims = jwtTokenService.parseClaims(token);
+        Object role = claims.get("role");
+        if (!"MANAGER".equals(role == null ? null : String.valueOf(role))) {
             throw new ApiException("Manager role required", 403);
         }
-        return userId;
+        return Long.valueOf(claims.getSubject());
     }
 
     private String requireAuthorizationHeader(String authorizationHeader) {

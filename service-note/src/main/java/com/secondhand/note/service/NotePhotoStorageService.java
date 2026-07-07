@@ -1,6 +1,7 @@
 package com.secondhand.note.service;
 
 import com.secondhand.common.exception.ApiException;
+import jakarta.annotation.PreDestroy;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
@@ -28,6 +29,9 @@ public class NotePhotoStorageService {
 
     private final R2StorageProperties properties;
 
+    /** Lazily built once and reused across uploads instead of per request. */
+    private volatile S3Client s3Client;
+
     public NotePhotoStorageService(R2StorageProperties properties) {
         this.properties = properties;
     }
@@ -43,7 +47,8 @@ public class NotePhotoStorageService {
         validateConfigured();
 
         List<String> uploadedUrls = new ArrayList<>();
-        try (S3Client s3Client = buildClient()) {
+        S3Client client = s3Client();
+        try {
             for (MultipartFile file : files) {
                 if (file == null || file.isEmpty()) {
                     continue;
@@ -54,9 +59,12 @@ public class NotePhotoStorageService {
                         .bucket(properties.getBucket())
                         .key(key)
                         .contentType(file.getContentType())
+                        // Keys are UUID-unique and never rewritten, so browsers and the
+                        // CDN can cache the object forever.
+                        .cacheControl("public, max-age=31536000, immutable")
                         .build();
 
-                s3Client.putObject(putObjectRequest, RequestBody.fromBytes(file.getBytes()));
+                client.putObject(putObjectRequest, RequestBody.fromBytes(file.getBytes()));
                 uploadedUrls.add(buildPublicUrl(key));
             }
         } catch (IOException ex) {
@@ -74,17 +82,46 @@ public class NotePhotoStorageService {
             return;
         }
 
-        try (S3Client s3Client = buildClient()) {
-            for (String url : urls) {
-                String key = extractObjectKey(url);
-                if (!StringUtils.hasText(key)) {
-                    continue;
-                }
-                s3Client.deleteObject(DeleteObjectRequest.builder()
-                        .bucket(properties.getBucket())
-                        .key(key)
-                        .build());
+        S3Client client = s3Client();
+        for (String url : urls) {
+            String key = extractObjectKey(url);
+            if (!StringUtils.hasText(key)) {
+                continue;
             }
+            client.deleteObject(DeleteObjectRequest.builder()
+                    .bucket(properties.getBucket())
+                    .key(key)
+                    .build());
+        }
+    }
+
+    /**
+     * Returns the shared S3 client, building it lazily on first use so a client
+     * (and its connection pool) is created once per service, not per request.
+     *
+     * @return the reused S3 client
+     */
+    private S3Client s3Client() {
+        S3Client client = this.s3Client;
+        if (client == null) {
+            synchronized (this) {
+                client = this.s3Client;
+                if (client == null) {
+                    client = buildClient();
+                    this.s3Client = client;
+                }
+            }
+        }
+        return client;
+    }
+
+    /**
+     * Closes the shared S3 client on shutdown.
+     */
+    @PreDestroy
+    void closeClient() {
+        if (s3Client != null) {
+            s3Client.close();
         }
     }
 
