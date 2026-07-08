@@ -1,7 +1,7 @@
 package com.secondhand.message.service;
 
 import com.secondhand.common.tool.AssertUtil;
-import com.secondhand.message.dto.ApiResponse;
+import com.secondhand.common.output.ApiResponse;
 import com.secondhand.message.dto.MessageResponse;
 import com.secondhand.message.entity.Message;
 import com.secondhand.message.repository.MessageRepository;

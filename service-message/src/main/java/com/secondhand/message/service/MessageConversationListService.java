@@ -1,9 +1,9 @@
 package com.secondhand.message.service;
 
 import com.secondhand.common.tool.AssertUtil;
-import com.secondhand.message.dto.ApiResponse;
+import com.secondhand.common.output.ApiResponse;
 import com.secondhand.message.dto.ConversationResponse;
-import com.secondhand.message.dto.PageInfoResponse;
+import com.secondhand.common.output.PageInfoResponse;
 import com.secondhand.message.entity.Message;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoTemplate;

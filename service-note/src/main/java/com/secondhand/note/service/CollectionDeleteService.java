@@ -2,7 +2,7 @@ package com.secondhand.note.service;
 
 import com.secondhand.common.entity.Status;
 import com.secondhand.common.tool.AssertUtil;
-import com.secondhand.note.dto.ApiResponse;
+import com.secondhand.common.output.ApiResponse;
 import com.secondhand.note.entity.Collection;
 import com.secondhand.note.repository.CollectionRepository;
 import jakarta.annotation.Resource;

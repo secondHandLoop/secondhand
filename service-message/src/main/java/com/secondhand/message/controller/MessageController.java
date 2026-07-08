@@ -1,8 +1,8 @@
 package com.secondhand.message.controller;
 
 import com.secondhand.common.controller.RequestUserIdResolver;
-import com.secondhand.message.dto.ApiResponse;
-import com.secondhand.message.dto.ApiErrorResponse;
+import com.secondhand.common.output.ApiResponse;
+import com.secondhand.common.output.ApiErrorResponse;
 import com.secondhand.message.dto.ConversationResponse;
 import com.secondhand.message.dto.MessageRequest;
 import com.secondhand.message.dto.MessageResponse;

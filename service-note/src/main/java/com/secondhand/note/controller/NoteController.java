@@ -10,7 +10,7 @@ import com.secondhand.note.dto.NoteDetailResponseBody;
 import com.secondhand.note.dto.NoteEditRequest;
 import com.secondhand.note.dto.ImageAttributesResponse;
 import com.secondhand.note.dto.NoteIdRequest;
-import com.secondhand.note.dto.PaginationQuery;
+import com.secondhand.common.input.PaginationQuery;
 import com.secondhand.note.dto.UploadMediaResponse;
 import com.secondhand.note.service.CollectionAddService;
 import com.secondhand.note.service.CollectionDeleteService;
@@ -28,7 +28,7 @@ import com.secondhand.note.service.PhotoAnalyzeService;
 import com.secondhand.note.service.ManagerNoteDetailService;
 import com.secondhand.note.service.ManagerNoteListService;
 import com.secondhand.note.service.NotePhotoStorageService;
-import com.secondhand.note.openapi.schema.ApiErrorResponse;
+import com.secondhand.common.output.ApiErrorResponse;
 import com.secondhand.note.openapi.schema.NoteListQuery;
 import com.secondhand.note.openapi.schema.NoteListItemResponse;
 import com.secondhand.note.openapi.schema.NoteListResponse;
@@ -154,7 +154,7 @@ public class NoteController {
             @ApiResponse(responseCode = "503", description = "Image identification is not enabled.", content = @Content(schema = @Schema(implementation = ApiErrorResponse.class)))
     })
     @PostMapping(value = "/notes/analyze-photo", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public com.secondhand.note.dto.ApiResponse<ImageAttributesResponse> analyzePhoto(
+    public com.secondhand.common.output.ApiResponse<ImageAttributesResponse> analyzePhoto(
             @RequestHeader("Authorization") String authorizationHeader,
             @RequestParam("photo") MultipartFile photo) {
         userIdResolver.requireUserId(authorizationHeader);
@@ -168,10 +168,10 @@ public class NoteController {
             @ApiResponse(responseCode = "401", description = "Authentication is required.", content = @Content(schema = @Schema(implementation = ApiErrorResponse.class)))
     })
     @PostMapping("/notes/reembed")
-    public com.secondhand.note.dto.ApiResponse<Integer> reembed(
+    public com.secondhand.common.output.ApiResponse<Integer> reembed(
             @RequestHeader("Authorization") String authorizationHeader) {
         userIdResolver.requireUserId(authorizationHeader);
-        return com.secondhand.note.dto.ApiResponse.success(noteEmbeddingService.reembedMissing());
+        return com.secondhand.common.output.ApiResponse.success(noteEmbeddingService.reembedMissing());
     }
 
     @Operation(
@@ -184,7 +184,7 @@ public class NoteController {
             @ApiResponse(responseCode = "500", description = "The service failed to process the request.", content = @Content(schema = @Schema(implementation = ApiErrorResponse.class)))
     })
     @GetMapping("/notes/{noteId}")
-    public com.secondhand.note.dto.ApiResponse<NoteDetailResponseBody> noteDetail(@RequestHeader(value = "Authorization", required = false) String authorizationHeader,
+    public com.secondhand.common.output.ApiResponse<NoteDetailResponseBody> noteDetail(@RequestHeader(value = "Authorization", required = false) String authorizationHeader,
                                                                                   @Parameter(description = "Note id to load.") @PathVariable Long noteId) {
         Long currentUserId = userIdResolver.resolveOptionalUserId(authorizationHeader);
         return noteDetailService.getNoteDetail(currentUserId, noteId);
@@ -200,7 +200,7 @@ public class NoteController {
             @ApiResponse(responseCode = "403", description = "Only managers can access this endpoint.", content = @Content(schema = @Schema(implementation = ApiErrorResponse.class)))
     })
     @GetMapping("/manage/notes")
-    public com.secondhand.note.dto.ApiResponse<List<ManagerNoteListItemResponse>> manageNotes(@RequestHeader("Authorization") String authorizationHeader,
+    public com.secondhand.common.output.ApiResponse<List<ManagerNoteListItemResponse>> manageNotes(@RequestHeader("Authorization") String authorizationHeader,
                                                                                               @ParameterObject ManagerNoteListQuery query) {
         userIdResolver.requireManagerUserId(authorizationHeader);
         return managerNoteListService.listNotesForManager(query.getPage(), query.getLimit(), query.getKeyword(),
@@ -217,7 +217,7 @@ public class NoteController {
             @ApiResponse(responseCode = "403", description = "Only managers can access this endpoint.", content = @Content(schema = @Schema(implementation = ApiErrorResponse.class)))
     })
     @GetMapping("/manage/notes/{noteId}")
-    public com.secondhand.note.dto.ApiResponse<ManagerNoteDetailResponseBody> manageNoteDetail(@RequestHeader("Authorization") String authorizationHeader,
+    public com.secondhand.common.output.ApiResponse<ManagerNoteDetailResponseBody> manageNoteDetail(@RequestHeader("Authorization") String authorizationHeader,
                                                                                                 @Parameter(description = "Note id to inspect.") @PathVariable Long noteId) {
         userIdResolver.requireManagerUserId(authorizationHeader);
         return managerNoteDetailService.getNoteDetailForManager(noteId);
@@ -233,7 +233,7 @@ public class NoteController {
             @ApiResponse(responseCode = "401", description = "Authentication is required.", content = @Content(schema = @Schema(implementation = ApiErrorResponse.class)))
     })
     @PostMapping(value = "/notes", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public com.secondhand.note.dto.ApiResponse<Void> addNote(@RequestHeader("Authorization") String authorizationHeader,
+    public com.secondhand.common.output.ApiResponse<Void> addNote(@RequestHeader("Authorization") String authorizationHeader,
                                                              @ModelAttribute NoteCreateRequest request) {
         Long currentUserId = userIdResolver.requireUserId(authorizationHeader);
         List<String> photoUrls = notePhotoStorageService.uploadPhotos(request.getPhotos(), currentUserId);
@@ -253,7 +253,7 @@ public class NoteController {
             @ApiResponse(responseCode = "401", description = "Authentication is required.", content = @Content(schema = @Schema(implementation = ApiErrorResponse.class)))
     })
     @PutMapping(value = "/notes/{noteId}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public com.secondhand.note.dto.ApiResponse<Void> editNote(@RequestHeader("Authorization") String authorizationHeader,
+    public com.secondhand.common.output.ApiResponse<Void> editNote(@RequestHeader("Authorization") String authorizationHeader,
                                                               @Parameter(description = "Note id to update.") @PathVariable Long noteId,
                                                               @ModelAttribute NoteEditRequest request) {
         Long currentUserId = userIdResolver.requireUserId(authorizationHeader);
@@ -274,7 +274,7 @@ public class NoteController {
             @ApiResponse(responseCode = "401", description = "Authentication is required.", content = @Content(schema = @Schema(implementation = ApiErrorResponse.class)))
     })
     @DeleteMapping("/notes/{noteId}")
-    public com.secondhand.note.dto.ApiResponse<Void> deleteNote(@RequestHeader("Authorization") String authorizationHeader,
+    public com.secondhand.common.output.ApiResponse<Void> deleteNote(@RequestHeader("Authorization") String authorizationHeader,
                                                                 @Parameter(description = "Note id to delete.") @PathVariable Long noteId) {
         Long currentUserId = userIdResolver.requireUserId(authorizationHeader);
         return noteDeleteService.deleteNote(currentUserId, noteId);
@@ -308,7 +308,7 @@ public class NoteController {
             @ApiResponse(responseCode = "401", description = "Authentication is required.", content = @Content(schema = @Schema(implementation = ApiErrorResponse.class)))
     })
     @GetMapping("/collections")
-    public com.secondhand.note.dto.ApiResponse<List<NoteListItemResponse>> listCollections(@RequestHeader("Authorization") String authorizationHeader,
+    public com.secondhand.common.output.ApiResponse<List<NoteListItemResponse>> listCollections(@RequestHeader("Authorization") String authorizationHeader,
                                                                                            @ParameterObject PaginationQuery query) {
         Long currentUserId = userIdResolver.requireUserId(authorizationHeader);
         return collectionListService.listCollections(query.getPage(), query.getLimit(), currentUserId);
@@ -324,7 +324,7 @@ public class NoteController {
             @ApiResponse(responseCode = "401", description = "Authentication is required.", content = @Content(schema = @Schema(implementation = ApiErrorResponse.class)))
     })
     @PostMapping("/collections")
-    public com.secondhand.note.dto.ApiResponse<Void> addCollection(@RequestHeader("Authorization") String authorizationHeader,
+    public com.secondhand.common.output.ApiResponse<Void> addCollection(@RequestHeader("Authorization") String authorizationHeader,
                                                                    @org.springframework.web.bind.annotation.RequestBody NoteIdRequest request) {
         Long currentUserId = userIdResolver.requireUserId(authorizationHeader);
         return collectionAddService.addCollection(currentUserId, request.getNoteId());
@@ -340,7 +340,7 @@ public class NoteController {
             @ApiResponse(responseCode = "401", description = "Authentication is required.", content = @Content(schema = @Schema(implementation = ApiErrorResponse.class)))
     })
     @DeleteMapping("/collections/{noteId}")
-    public com.secondhand.note.dto.ApiResponse<Void> deleteCollection(@RequestHeader("Authorization") String authorizationHeader,
+    public com.secondhand.common.output.ApiResponse<Void> deleteCollection(@RequestHeader("Authorization") String authorizationHeader,
                                                                       @Parameter(description = "Note id to remove from collections.") @PathVariable Long noteId) {
         Long currentUserId = userIdResolver.requireUserId(authorizationHeader);
         return collectionDeleteService.deleteCollection(currentUserId, noteId);
@@ -355,7 +355,7 @@ public class NoteController {
             @ApiResponse(responseCode = "401", description = "Authentication is required.", content = @Content(schema = @Schema(implementation = ApiErrorResponse.class)))
     })
     @GetMapping("/histories")
-    public com.secondhand.note.dto.ApiResponse<List<NoteListItemResponse>> listHistories(@RequestHeader("Authorization") String authorizationHeader,
+    public com.secondhand.common.output.ApiResponse<List<NoteListItemResponse>> listHistories(@RequestHeader("Authorization") String authorizationHeader,
                                                                                          @ParameterObject PaginationQuery query) {
         Long currentUserId = userIdResolver.requireUserId(authorizationHeader);
         return historyListService.listHistories(query.getPage(), query.getLimit(), currentUserId);
@@ -371,7 +371,7 @@ public class NoteController {
             @ApiResponse(responseCode = "401", description = "Authentication is required.", content = @Content(schema = @Schema(implementation = ApiErrorResponse.class)))
     })
     @PostMapping("/histories")
-    public com.secondhand.note.dto.ApiResponse<Void> addHistory(@RequestHeader("Authorization") String authorizationHeader,
+    public com.secondhand.common.output.ApiResponse<Void> addHistory(@RequestHeader("Authorization") String authorizationHeader,
                                                                 @org.springframework.web.bind.annotation.RequestBody NoteIdRequest request) {
         Long currentUserId = userIdResolver.requireUserId(authorizationHeader);
         return historyAddService.addHistory(currentUserId, request.getNoteId());
@@ -387,7 +387,7 @@ public class NoteController {
             @ApiResponse(responseCode = "401", description = "Authentication is required.", content = @Content(schema = @Schema(implementation = ApiErrorResponse.class)))
     })
     @DeleteMapping("/histories")
-    public com.secondhand.note.dto.ApiResponse<Void> deleteHistories(@RequestHeader("Authorization") String authorizationHeader,
+    public com.secondhand.common.output.ApiResponse<Void> deleteHistories(@RequestHeader("Authorization") String authorizationHeader,
                                                                      @org.springframework.web.bind.annotation.RequestBody HistoryDeleteRequest request) {
         Long currentUserId = userIdResolver.requireUserId(authorizationHeader);
         return historyDeleteService.deleteHistories(currentUserId, request.getNoteIds());

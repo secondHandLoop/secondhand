@@ -1,7 +1,10 @@
-package com.secondhand.note.dto;
+package com.secondhand.common.input;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 
+/**
+ * Common pagination query parameters shared by list endpoints.
+ */
 @Schema(description = "Common pagination query parameters.")
 public class PaginationQuery {
 
@@ -10,19 +13,8 @@ public class PaginationQuery {
     @Schema(description = "Number of items per page.", example = "10")
     private Integer limit;
 
-    public Integer getPage() {
-        return page;
-    }
-
-    public void setPage(Integer page) {
-        this.page = page;
-    }
-
-    public Integer getLimit() {
-        return limit;
-    }
-
-    public void setLimit(Integer limit) {
-        this.limit = limit;
-    }
+    public Integer getPage() { return page; }
+    public void setPage(Integer page) { this.page = page; }
+    public Integer getLimit() { return limit; }
+    public void setLimit(Integer limit) { this.limit = limit; }
 }

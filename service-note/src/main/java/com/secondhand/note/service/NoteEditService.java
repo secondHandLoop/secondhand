@@ -3,7 +3,7 @@ package com.secondhand.note.service;
 import com.secondhand.common.entity.Status;
 import com.secondhand.common.geo.GeocodingService;
 import com.secondhand.common.tool.AssertUtil;
-import com.secondhand.note.dto.ApiResponse;
+import com.secondhand.common.output.ApiResponse;
 import com.secondhand.note.entity.Note;
 import com.secondhand.note.entity.NoteCondition;
 import com.secondhand.note.entity.NoteStatus;

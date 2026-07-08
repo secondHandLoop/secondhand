@@ -1,7 +1,7 @@
 package com.secondhand.note.service;
 
 import com.secondhand.common.tool.AssertUtil;
-import com.secondhand.note.dto.ApiResponse;
+import com.secondhand.common.output.ApiResponse;
 import com.secondhand.note.dto.ManagerNoteDetailResponseBody;
 import com.secondhand.note.dto.NoteResponseMapper;
 import com.secondhand.note.entity.Note;

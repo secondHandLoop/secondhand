@@ -1,8 +1,14 @@
-package com.secondhand.user.service;
+package com.secondhand.common.storage;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 
+/**
+ * Cloudflare R2 (S3-compatible) connection settings, shared by every service.
+ *
+ * <p>Object-key prefixes are supplied by each caller (avatars, notes, …) rather
+ * than living here, so this holds only the connection fields.
+ */
 @Component
 @ConfigurationProperties(prefix = "storage.r2")
 public class R2StorageProperties {
@@ -13,7 +19,6 @@ public class R2StorageProperties {
     private String accessKey;
     private String secretKey;
     private String publicBaseUrl;
-    private String avatarPrefix = "avatars";
 
     public boolean isEnabled() { return enabled; }
     public void setEnabled(boolean enabled) { this.enabled = enabled; }
@@ -29,6 +34,4 @@ public class R2StorageProperties {
     public void setSecretKey(String secretKey) { this.secretKey = secretKey; }
     public String getPublicBaseUrl() { return publicBaseUrl; }
     public void setPublicBaseUrl(String publicBaseUrl) { this.publicBaseUrl = publicBaseUrl; }
-    public String getAvatarPrefix() { return avatarPrefix; }
-    public void setAvatarPrefix(String avatarPrefix) { this.avatarPrefix = avatarPrefix; }
 }

@@ -2,7 +2,7 @@ package com.secondhand.note.service;
 
 import com.secondhand.common.exception.ApiException;
 import com.secondhand.note.config.GeminiProperties;
-import com.secondhand.note.dto.ApiResponse;
+import com.secondhand.common.output.ApiResponse;
 import com.secondhand.note.dto.ImageAttributesResponse;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;

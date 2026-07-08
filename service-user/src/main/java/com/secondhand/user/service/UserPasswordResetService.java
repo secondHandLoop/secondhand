@@ -1,7 +1,7 @@
 package com.secondhand.user.service;
 
 import com.secondhand.common.tool.AssertUtil;
-import com.secondhand.user.dto.ApiResponse;
+import com.secondhand.common.output.ApiResponse;
 import com.secondhand.user.dto.VerificationChallengeResponse;
 import com.secondhand.user.dto.VerificationStatusResponse;
 import com.secondhand.user.entity.EmailVerificationChallenge;

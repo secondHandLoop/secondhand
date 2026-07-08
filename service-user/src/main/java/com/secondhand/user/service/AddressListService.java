@@ -3,7 +3,7 @@ package com.secondhand.user.service;
 import com.secondhand.common.entity.Status;
 import com.secondhand.common.tool.AssertUtil;
 import com.secondhand.user.dto.AddressResponse;
-import com.secondhand.user.dto.ApiResponse;
+import com.secondhand.common.output.ApiResponse;
 import com.secondhand.user.dto.UserResponseMapper;
 import com.secondhand.user.entity.Address;
 import com.secondhand.user.repository.AddressRepository;

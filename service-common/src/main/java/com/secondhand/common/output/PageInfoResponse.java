@@ -1,7 +1,10 @@
-package com.secondhand.note.dto;
+package com.secondhand.common.output;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 
+/**
+ * Pagination metadata returned by list endpoints, shared by every service.
+ */
 @Schema(description = "Pagination metadata returned by list endpoints.")
 public class PageInfoResponse {
 
@@ -12,27 +15,10 @@ public class PageInfoResponse {
     @Schema(description = "Total number of available records.", example = "56")
     private Long total;
 
-    public Integer getPage() {
-        return page;
-    }
-
-    public void setPage(Integer page) {
-        this.page = page;
-    }
-
-    public Integer getLimit() {
-        return limit;
-    }
-
-    public void setLimit(Integer limit) {
-        this.limit = limit;
-    }
-
-    public Long getTotal() {
-        return total;
-    }
-
-    public void setTotal(Long total) {
-        this.total = total;
-    }
+    public Integer getPage() { return page; }
+    public void setPage(Integer page) { this.page = page; }
+    public Integer getLimit() { return limit; }
+    public void setLimit(Integer limit) { this.limit = limit; }
+    public Long getTotal() { return total; }
+    public void setTotal(Long total) { this.total = total; }
 }

@@ -1,9 +1,9 @@
 package com.secondhand.user.service;
 
 import com.secondhand.common.entity.Status;
-import com.secondhand.user.dto.ApiResponse;
+import com.secondhand.common.output.ApiResponse;
 import com.secondhand.user.dto.ManagerUserListItemResponse;
-import com.secondhand.user.dto.PageInfoResponse;
+import com.secondhand.common.output.PageInfoResponse;
 import com.secondhand.user.dto.UserResponseMapper;
 import com.secondhand.user.entity.Role;
 import com.secondhand.user.entity.User;

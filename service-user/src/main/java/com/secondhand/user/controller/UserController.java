@@ -2,14 +2,14 @@ package com.secondhand.user.controller;
 
 import com.secondhand.common.controller.RequestUserIdResolver;
 import com.secondhand.user.dto.AddressResponse;
-import com.secondhand.user.dto.ApiResponse;
-import com.secondhand.user.dto.ApiErrorResponse;
+import com.secondhand.common.output.ApiResponse;
+import com.secondhand.common.output.ApiErrorResponse;
 import com.secondhand.user.dto.FollowUserResponse;
 import com.secondhand.user.dto.AuthSuccessResponse;
 import com.secondhand.user.dto.ManagerCreateResponse;
 import com.secondhand.user.dto.ManagerUserDetailResponse;
 import com.secondhand.user.dto.ManagerUserListItemResponse;
-import com.secondhand.user.dto.PageInfoResponse;
+import com.secondhand.common.output.PageInfoResponse;
 import com.secondhand.user.dto.PublicUserProfileResponse;
 import com.secondhand.user.dto.UploadPhotoResponse;
 import com.secondhand.user.dto.UserProfileResponse;

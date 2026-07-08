@@ -1,6 +1,6 @@
 package com.secondhand.note.service;
 
-import com.secondhand.note.dto.ApiResponse;
+import com.secondhand.common.output.ApiResponse;
 import com.secondhand.common.geo.GeocodingService;
 import com.secondhand.note.entity.Note;
 import com.secondhand.note.entity.NoteCondition;

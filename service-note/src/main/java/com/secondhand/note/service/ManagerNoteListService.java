@@ -1,10 +1,10 @@
 package com.secondhand.note.service;
 
 import com.secondhand.common.entity.Status;
-import com.secondhand.note.dto.ApiResponse;
+import com.secondhand.common.output.ApiResponse;
 import com.secondhand.note.dto.ManagerNoteListItemResponse;
 import com.secondhand.note.dto.NoteResponseMapper;
-import com.secondhand.note.dto.PageInfoResponse;
+import com.secondhand.common.output.PageInfoResponse;
 import com.secondhand.note.entity.Note;
 import com.secondhand.note.entity.NoteStatus;
 import com.secondhand.note.entity.TopCategory;
