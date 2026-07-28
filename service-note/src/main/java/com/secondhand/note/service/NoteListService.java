@@ -30,6 +30,11 @@ public class NoteListService {
     // ─── Explore pool: how many recent notes to score before paginating ───
     private static final int EXPLORE_POOL_SIZE = 300;
 
+    // ─── Distance mode: how many recent notes to pull before filtering/sorting by distance ───
+    private static final int DISTANCE_POOL_SIZE = 500;
+
+    private static final double KM_PER_MILE = 1.60934;
+
     // ─── Recency half-life: score = 0.5 at this age ───
     private static final double RECENCY_HALF_LIFE_SECONDS = 7 * 86400.0;  // 7 days
 
@@ -66,13 +71,15 @@ public class NoteListService {
             Double userLng,
             String userCity,
             String userState,
-            String userZipcode
+            String userZipcode,
+            Double radiusMiles,
+            String sort
     ) {
         NoteListResponse response = new NoteListResponse();
         response.setStatus(200);
         response.setMessage("success");
         response.setBody(listNoteItems(page, limit, currentUserId, keyword, topCategory, delivery, myNotes, explore,
-                interestCategories, nearby, userLat, userLng, userCity, userState, userZipcode));
+                interestCategories, nearby, userLat, userLng, userCity, userState, userZipcode, radiusMiles, sort));
         return response;
     }
 
@@ -91,7 +98,9 @@ public class NoteListService {
             Double userLng,
             String userCity,
             String userState,
-            String userZipcode
+            String userZipcode,
+            Double radiusMiles,
+            String sort
     ) {
         page  = (page  == null || page  < 1) ? 1  : page;
         limit = (limit == null || limit < 1) ? 10 : limit;
@@ -104,6 +113,14 @@ public class NoteListService {
                 && delivery == null
                 && !Boolean.TRUE.equals(nearby);
 
+        // ── Distance filter / sort. Active only with coordinates; takes precedence
+        // over explore/nearby so an explicit "within N miles" or "nearest first"
+        // request is honored. Notes without a geocode are excluded from this mode.
+        boolean hasCoords = userLat != null && userLng != null;
+        boolean sortByDistance = "distance".equalsIgnoreCase(sort);
+        Double radiusKm = (radiusMiles != null && radiusMiles > 0) ? radiusMiles * KM_PER_MILE : null;
+        boolean distanceMode = hasCoords && (radiusKm != null || sortByDistance);
+
         // ── SEMANTIC SEARCH ───────────────────────────────────────────────────
         // When a free-text query is present, rank by embedding similarity so
         // "black or gray table" also surfaces dark desks, best matches first.
@@ -112,6 +129,7 @@ public class NoteListService {
                 && StringUtils.isNotBlank(keyword)
                 && !isMyNotes
                 && !isExplore
+                && !distanceMode
                 && !Boolean.TRUE.equals(nearby)) {
             List<Long> ids = noteEmbeddingService.semanticSearchIds(
                     keyword, currentUserId, topCategory, delivery, page, limit);
@@ -123,14 +141,14 @@ public class NoteListService {
                 for (Note n : noteRepository.findByIdIn(ids)) {
                     byId.put(n.getId(), n);
                 }
-                List<NoteListItemResponse> items = new ArrayList<>(ids.size());
+                List<Note> ordered = new ArrayList<>(ids.size());
                 for (Long id : ids) {
                     Note n = byId.get(id);
                     if (n != null) {
-                        items.add(NoteResponseMapper.toNoteListItem(n));
+                        ordered.add(n);
                     }
                 }
-                return items;
+                return toItems(ordered, userLat, userLng);
             }
         }
 
@@ -140,7 +158,33 @@ public class NoteListService {
         // are no matches, so the extra full-table COUNT is dropped.
         List<Note> result;
 
-        if (isExplore) {
+        if (distanceMode) {
+            // ── DISTANCE: pull a recent pool, keep geocoded notes (within radius if
+            //    given), optionally order nearest-first, then page. ──
+            JdbcQueryBuilder listQ = isMyNotes
+                    ? buildMyNoteQuery(currentUserId, false)
+                    : buildVisibleNoteQuery(currentUserId, false);
+            applyFilters(listQ, keyword, topCategory, delivery);
+            List<Note> pool = listQ
+                    .orderBy("update_at", DESC)
+                    .limit(1, DISTANCE_POOL_SIZE)
+                    .find(Note.class);
+
+            Map<Note, Double> distByNote = new IdentityHashMap<>();
+            List<Note> withinRange = new ArrayList<>();
+            for (Note n : pool) {
+                if (n.getLatitude() == null || n.getLongitude() == null) continue;
+                double d = haversineKm(userLat, userLng, n.getLatitude(), n.getLongitude());
+                if (radiusKm != null && d > radiusKm) continue;
+                distByNote.put(n, d);
+                withinRange.add(n);
+            }
+            if (sortByDistance) {
+                withinRange.sort((a, b) -> Double.compare(distByNote.get(a), distByNote.get(b)));
+            }
+            result = slicePage(withinRange, page, limit);
+
+        } else if (isExplore) {
             // ── EXPLORE: fetch a large pool, score each note, sort, then page ──
             JdbcQueryBuilder listQ = buildVisibleNoteQuery(currentUserId, false);
             List<Note> pool = listQ
@@ -202,9 +246,19 @@ public class NoteListService {
                     .find(Note.class);
         }
 
-        List<NoteListItemResponse> items = new ArrayList<>(result.size());
-        for (Note note : result) {
-            items.add(NoteResponseMapper.toNoteListItem(note));
+        return toItems(result, userLat, userLng);
+    }
+
+    /** Maps notes to list items, tagging each with its distance (km) from the user when known. */
+    private List<NoteListItemResponse> toItems(List<Note> notes, Double userLat, Double userLng) {
+        boolean hasCoords = userLat != null && userLng != null;
+        List<NoteListItemResponse> items = new ArrayList<>(notes.size());
+        for (Note note : notes) {
+            NoteListItemResponse item = NoteResponseMapper.toNoteListItem(note);
+            if (hasCoords && note.getLatitude() != null && note.getLongitude() != null) {
+                item.setDistanceKm(haversineKm(userLat, userLng, note.getLatitude(), note.getLongitude()));
+            }
+            items.add(item);
         }
         return items;
     }

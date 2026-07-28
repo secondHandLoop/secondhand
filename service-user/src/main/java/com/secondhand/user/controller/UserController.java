@@ -148,6 +148,16 @@ public class UserController {
         return userLoginService.login(request.getEmail(), request.getPassword());
     }
 
+    @Operation(summary = "Admin login", description = "Authenticates a manager by username and password for the back-platform dashboard. No email verification; only MANAGER accounts are allowed.")
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Login successful.", useReturnTypeSchema = true),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Invalid credentials or the account is not a manager.", content = @Content(schema = @Schema(implementation = ApiErrorResponse.class)))
+    })
+    @PostMapping("/managers/login")
+    public ApiResponse<AuthSuccessResponse> adminLogin(@RequestBody AdminLoginRequest request) {
+        return userLoginService.loginByUsername(request.getUsername(), request.getPassword());
+    }
+
     @Operation(summary = "Verify login email", description = "Completes a login flow that was paused for email re-verification.")
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Login verification completed successfully.", useReturnTypeSchema = true),
@@ -523,6 +533,30 @@ public class UserController {
 
         public void setEmail(String email) {
             this.email = email;
+        }
+
+        public String getPassword() {
+            return password;
+        }
+
+        public void setPassword(String password) {
+            this.password = password;
+        }
+    }
+
+    @Schema(name = "AdminLoginRequest", description = "Request payload to authenticate a manager by username and password.")
+    public static class AdminLoginRequest {
+        @Schema(description = "Manager username.", example = "admin")
+        private String username;
+        @Schema(description = "Account password.", example = "admin123")
+        private String password;
+
+        public String getUsername() {
+            return username;
+        }
+
+        public void setUsername(String username) {
+            this.username = username;
         }
 
         public String getPassword() {

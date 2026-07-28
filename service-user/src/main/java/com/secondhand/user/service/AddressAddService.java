@@ -1,6 +1,7 @@
 package com.secondhand.user.service;
 
 import com.secondhand.common.entity.Status;
+import com.secondhand.common.geo.GeocodingService;
 import com.secondhand.common.tool.AssertUtil;
 import com.secondhand.common.output.ApiResponse;
 import com.secondhand.user.entity.Address;
@@ -19,6 +20,9 @@ public class AddressAddService {
 
     @Resource
     private AddressRepository addressRepository;
+
+    @Resource
+    private GeocodingService geocodingService;
 
     /**
      * Adds an address for the current user and optionally promotes it to default.
@@ -65,6 +69,15 @@ public class AddressAddService {
         addr.setZipcode(zipcode);
         addr.setIsDefault(makeDefault);
         addr.setPhone(phone);
+
+        // Geocode so distance-from-this-address can be computed later. Best-effort:
+        // a null result (Nominatim miss/timeout) just leaves the coordinates unset.
+        GeocodingService.LatLng ll = geocodingService.geocode(
+                state, city, address, zipcode == null ? null : String.valueOf(zipcode));
+        if (ll != null) {
+            addr.setLatitude(ll.getLat());
+            addr.setLongitude(ll.getLng());
+        }
 
         addressRepository.save(addr);
         return ApiResponse.success();

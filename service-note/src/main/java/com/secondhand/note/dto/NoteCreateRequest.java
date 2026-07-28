@@ -36,6 +36,8 @@ public class NoteCreateRequest {
     private NoteCondition noteCondition;
     @Schema(description = "Whether delivery is available.", example = "true")
     private boolean delivery;
+    @Schema(description = "AI-extracted attributes JSON (colors, material, shape, keywords).")
+    private String attributes;
     @ArraySchema(schema = @Schema(description = "Photos to upload with the note.", type = "string", format = "binary"))
     private List<MultipartFile> photos;
 
@@ -63,6 +65,8 @@ public class NoteCreateRequest {
     public void setNoteCondition(NoteCondition noteCondition) { this.noteCondition = noteCondition; }
     public boolean isDelivery() { return delivery; }
     public void setDelivery(boolean delivery) { this.delivery = delivery; }
+    public String getAttributes() { return attributes; }
+    public void setAttributes(String attributes) { this.attributes = attributes; }
     public List<MultipartFile> getPhotos() { return photos; }
     public void setPhotos(List<MultipartFile> photos) { this.photos = photos; }
 }

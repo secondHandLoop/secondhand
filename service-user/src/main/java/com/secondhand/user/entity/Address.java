@@ -21,4 +21,9 @@ public class Address extends Base {
     private Integer zipcode;
     private Boolean isDefault;
     private String phone;
+
+    // Geocoded once on save (see AddressAddService/AddressEditService) so distance
+    // to a listing can be computed from a saved address, not just live GPS.
+    private Double latitude;
+    private Double longitude;
 }

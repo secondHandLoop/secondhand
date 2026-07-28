@@ -1,5 +1,8 @@
 package com.secondhand.note.service;
 
+import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.JSONArray;
+import com.alibaba.fastjson.JSONObject;
 import com.secondhand.note.config.GeminiProperties;
 import com.secondhand.note.entity.Note;
 import com.secondhand.note.entity.TopCategory;
@@ -176,6 +179,7 @@ public class NoteEmbeddingService {
         StringBuilder sb = new StringBuilder();
         appendPart(sb, note.getTitle());
         appendPart(sb, note.getDescription());
+        appendPart(sb, attributesToText(note.getAttributes()));
         if (note.getTopCategory() != null) {
             appendPart(sb, note.getTopCategory().name().toLowerCase().replace('_', ' '));
         }
@@ -186,6 +190,44 @@ public class NoteEmbeddingService {
             appendPart(sb, join(note.getCity(), note.getState()));
         }
         return sb.toString().trim();
+    }
+
+    /** Flattens the AI attributes JSON (colors, material, shape, keywords) into search text. */
+    private String attributesToText(String attributesJson) {
+        if (!StringUtils.hasText(attributesJson)) {
+            return null;
+        }
+        try {
+            JSONObject o = JSON.parseObject(attributesJson);
+            List<String> parts = new ArrayList<>();
+            collect(parts, o.get("colors"));
+            collect(parts, o.get("material"));
+            collect(parts, o.get("shape"));
+            collect(parts, o.get("keywords"));
+            return parts.isEmpty() ? null : String.join(" ", parts);
+        } catch (Exception ex) {
+            return null;
+        }
+    }
+
+    private void collect(List<String> parts, Object value) {
+        if (value == null) {
+            return;
+        }
+        if (value instanceof JSONArray) {
+            JSONArray arr = (JSONArray) value;
+            for (int i = 0; i < arr.size(); i++) {
+                String s = arr.getString(i);
+                if (StringUtils.hasText(s)) {
+                    parts.add(s.trim());
+                }
+            }
+        } else {
+            String s = String.valueOf(value).trim();
+            if (StringUtils.hasText(s) && !"null".equals(s)) {
+                parts.add(s);
+            }
+        }
     }
 
     private void appendPart(StringBuilder sb, String part) {

@@ -4,6 +4,7 @@ import com.secondhand.common.storage.R2ObjectStorage;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -11,17 +12,33 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * Uploads note photos via the shared R2 object storage.
+ * Uploads note photos via the shared R2 object storage, compressing them first so
+ * they load fast when the listing is viewed.
  */
 @Service
 public class NotePhotoStorageService {
 
     private static final String NOTE_PREFIX = "notes";
 
-    private final R2ObjectStorage storage;
+    /** Longest-side cap for stored photos — large enough for a full-screen detail view. */
+    private static final int MAX_STORAGE_DIM = 1600;
 
-    public NotePhotoStorageService(R2ObjectStorage storage) {
+    /** JPEG quality for stored photos: a good size/quality balance for listing images. */
+    private static final float STORAGE_QUALITY = 0.80f;
+
+    /**
+     * Photos already within {@link #MAX_STORAGE_DIM} and under this size are stored as-is.
+     * Clients compress before upload, so this makes the server a guardrail that only
+     * re-encodes oversized images rather than double-compressing every upload.
+     */
+    private static final long SKIP_COMPRESS_UNDER_BYTES = 1_000_000L;
+
+    private final R2ObjectStorage storage;
+    private final ImageCompressor imageCompressor;
+
+    public NotePhotoStorageService(R2ObjectStorage storage, ImageCompressor imageCompressor) {
         this.storage = storage;
+        this.imageCompressor = imageCompressor;
     }
 
     /**
@@ -40,9 +57,36 @@ public class NotePhotoStorageService {
             if (file == null || file.isEmpty()) {
                 continue;
             }
-            uploadedUrls.add(storage.upload(buildObjectKey(userId, file.getOriginalFilename()), file));
+            uploadedUrls.add(uploadOne(file, userId));
         }
         return uploadedUrls;
+    }
+
+    /**
+     * Compresses one photo and stores it, falling back to the untouched original if
+     * compression is not possible (e.g. an unsupported format).
+     *
+     * @param file   the uploaded image
+     * @param userId the owning user's id
+     * @return the public URL of the stored photo
+     */
+    private String uploadOne(MultipartFile file, Long userId) {
+        ImageCompressor.Result compressed = readAndCompress(file);
+        if (compressed != null && compressed.recompressed()) {
+            String key = buildObjectKey(userId, toJpegName(file.getOriginalFilename()));
+            return storage.upload(key, compressed.bytes(), "image/jpeg");
+        }
+        return storage.upload(buildObjectKey(userId, file.getOriginalFilename()), file);
+    }
+
+    /** Reads the file bytes and compresses them; returns null so the caller stores the original if reading fails. */
+    private ImageCompressor.Result readAndCompress(MultipartFile file) {
+        try {
+            return imageCompressor.compressToJpeg(
+                    file.getBytes(), MAX_STORAGE_DIM, STORAGE_QUALITY, SKIP_COMPRESS_UNDER_BYTES);
+        } catch (IOException ex) {
+            return null;
+        }
     }
 
     /**
@@ -63,5 +107,15 @@ public class NotePhotoStorageService {
                 + now.getDayOfMonth() + "/"
                 + UUID.randomUUID() + "-"
                 + storage.sanitizeFilename(originalFilename);
+    }
+
+    /** Swaps a filename's extension for ".jpg" so the stored key matches the re-encoded content. */
+    private String toJpegName(String originalFilename) {
+        if (originalFilename == null || originalFilename.isEmpty()) {
+            return "photo.jpg";
+        }
+        int dot = originalFilename.lastIndexOf('.');
+        String base = dot > 0 ? originalFilename.substring(0, dot) : originalFilename;
+        return base + ".jpg";
     }
 }

@@ -51,6 +51,28 @@ public class NoteListQuery {
     @Schema(description = "User zipcode fallback used when coordinates are not provided.", example = "78701")
     private String userZipcode;
 
+    @Schema(description = "Only return notes within this many miles of the user's location.", example = "10")
+    private Double radiusMiles;
+
+    @Schema(description = "Sort order. 'distance' sorts nearest-first (needs userLat/userLng); otherwise the mode default.", example = "distance")
+    private String sort;
+
+    public Double getRadiusMiles() {
+        return radiusMiles;
+    }
+
+    public void setRadiusMiles(Double radiusMiles) {
+        this.radiusMiles = radiusMiles;
+    }
+
+    public String getSort() {
+        return sort;
+    }
+
+    public void setSort(String sort) {
+        this.sort = sort;
+    }
+
     public Integer getPage() {
         return page;
     }

@@ -8,6 +8,7 @@ import com.secondhand.user.dto.UserResponseMapper;
 import com.secondhand.user.dto.VerificationChallengeResponse;
 import com.secondhand.user.entity.EmailVerificationChallenge;
 import com.secondhand.user.entity.EmailVerificationPurpose;
+import com.secondhand.user.entity.Role;
 import com.secondhand.user.entity.User;
 import com.secondhand.user.repository.UserRepository;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -70,6 +71,31 @@ public class UserLoginService {
         }
 
         user.setLastLoginAt(now);
+        userRepository.save(user);
+        return ApiResponse.success(buildAuthBody(user));
+    }
+
+    /**
+     * Authenticates a manager by username and password for the admin dashboard.
+     * Unlike email login this issues a token immediately (no email re-verification)
+     * and only permits MANAGER accounts.
+     *
+     * @param username the manager's username
+     * @param password the account password
+     * @return the auth payload (token + user)
+     */
+    public ApiResponse<AuthSuccessResponse> loginByUsername(String username, String password) {
+        AssertUtil.notNullOrBlank(username, "用户名不能为空");
+        AssertUtil.notNullOrBlank(password, "密码不能为空");
+
+        User user = userRepository.findByUsername(username.trim())
+                .orElseThrow(() -> new IllegalArgumentException("账号不存在"));
+
+        boolean passwordMatch = passwordEncoder.matches(password, user.getPassword());
+        AssertUtil.isTrue(passwordMatch, "密码错误");
+        AssertUtil.isTrue(user.getRole() == Role.MANAGER, "只有管理员可以登录后台");
+
+        user.setLastLoginAt(Instant.now().getEpochSecond());
         userRepository.save(user);
         return ApiResponse.success(buildAuthBody(user));
     }

@@ -65,6 +65,17 @@ public class NoteListItemResponse {
     @Schema(description = "Unix timestamp in seconds for the last update.", example = "1711988800")
     private Long updateAt;
 
+    @Schema(description = "Distance in km from the requester's location, if one was provided.", example = "3.2")
+    private Double distanceKm;
+
+    public Double getDistanceKm() {
+        return distanceKm;
+    }
+
+    public void setDistanceKm(Double distanceKm) {
+        this.distanceKm = distanceKm;
+    }
+
     public Long getId() {
         return id;
     }

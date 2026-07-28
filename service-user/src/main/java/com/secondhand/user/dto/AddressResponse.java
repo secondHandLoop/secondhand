@@ -23,6 +23,10 @@ public class AddressResponse {
     private Integer zipcode;
     @Schema(description = "Contact phone number.", example = "1234567890")
     private String phone;
+    @Schema(description = "Geocoded latitude of the address, if resolved.", example = "30.2672")
+    private Double latitude;
+    @Schema(description = "Geocoded longitude of the address, if resolved.", example = "-97.7431")
+    private Double longitude;
     @Schema(description = "Record status.")
     private Status status;
     @Schema(description = "Unix timestamp in seconds when the address was created.", example = "1711988800")
@@ -48,6 +52,10 @@ public class AddressResponse {
     public void setZipcode(Integer zipcode) { this.zipcode = zipcode; }
     public String getPhone() { return phone; }
     public void setPhone(String phone) { this.phone = phone; }
+    public Double getLatitude() { return latitude; }
+    public void setLatitude(Double latitude) { this.latitude = latitude; }
+    public Double getLongitude() { return longitude; }
+    public void setLongitude(Double longitude) { this.longitude = longitude; }
     public Status getStatus() { return status; }
     public void setStatus(Status status) { this.status = status; }
     public Long getCreateAt() { return createAt; }

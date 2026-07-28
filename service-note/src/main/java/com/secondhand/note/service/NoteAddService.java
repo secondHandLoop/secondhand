@@ -42,7 +42,8 @@ public class NoteAddService {
                                      NoteStatus noteStatus,
                                      TopCategory topCategory,
                                      NoteCondition noteCondition,
-                                     boolean delivery) {
+                                     boolean delivery,
+                                     String attributes) {
 
         Note note = new Note();
         note.setUserId(currentUserId);
@@ -59,6 +60,7 @@ public class NoteAddService {
         note.setTopCategory(topCategory);
         note.setNoteCondition(noteCondition);
         note.setDelivery(delivery);
+        note.setAttributes(attributes);
 
         // geocode
         GeocodingService.LatLng ll = geocodingService.geocode(state, city, address, zipcode);

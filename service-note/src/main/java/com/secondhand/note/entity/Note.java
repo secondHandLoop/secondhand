@@ -61,6 +61,10 @@ public class Note extends Base {
 
     private boolean delivery;
 
+    /** AI-extracted attributes as JSON (colors, material, shape, keywords); feeds semantic search. */
+    @Column(columnDefinition = "TEXT")
+    private String attributes;
+
     @Transient
     public List<String> getPhotoList() {
         if (photos == null || photos.trim().isEmpty()) {

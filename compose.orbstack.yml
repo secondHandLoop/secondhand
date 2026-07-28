@@ -99,12 +99,26 @@ services:
       target: service-note
     environment:
       <<: *backend-environment
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/secondhand?currentSchema=note_svc
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/secondhand?currentSchema=note_svc,public
       SPRING_DATASOURCE_USERNAME: postgres
       SPRING_DATASOURCE_PASSWORD: postgres
       GEOCODING_NOMINATIM_USER_AGENT: ${GEOCODING_NOMINATIM_USER_AGENT:-secondhand-app/1.0}
       GEOCODING_NOMINATIM_REFERER: ${GEOCODING_NOMINATIM_REFERER:-}
       GEOCODING_NOMINATIM_CONTACT_EMAIL: ${GEOCODING_NOMINATIM_CONTACT_EMAIL:-}
+      # Gemini (photo recognition, same-item grouping, embeddings) — pulled from .env
+      AI_GEMINI_ENABLED: ${AI_GEMINI_ENABLED:-false}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      GEMINI_BASE_URL: ${GEMINI_BASE_URL:-https://generativelanguage.googleapis.com/v1beta}
+      GEMINI_VISION_MODEL: ${GEMINI_VISION_MODEL:-gemini-flash-lite-latest}
+      # 3.x flash-lite default: thinking minimized via thinking-level (the native 3.x knob).
+      # For a Gemini 2.5 model, blank GEMINI_THINKING_LEVEL and set GEMINI_THINKING_BUDGET=0.
+      GEMINI_THINKING_LEVEL: ${GEMINI_THINKING_LEVEL:-minimal}
+      GEMINI_THINKING_BUDGET: ${GEMINI_THINKING_BUDGET:-0}
+      GEMINI_EMBEDDING_MODEL: ${GEMINI_EMBEDDING_MODEL:-gemini-embedding-001}
+      GEMINI_EMBEDDING_DIMENSIONS: ${GEMINI_EMBEDDING_DIMENSIONS:-768}
+      # Vision input cap — raise to 4096 in .env to measure the un-downscaled token cost.
+      GEMINI_AI_IMAGE_MAX_DIM: ${GEMINI_AI_IMAGE_MAX_DIM:-768}
+      GEMINI_AI_IMAGE_QUALITY: ${GEMINI_AI_IMAGE_QUALITY:-0.85}
     ports:
       - "7102:7102"
     depends_on:

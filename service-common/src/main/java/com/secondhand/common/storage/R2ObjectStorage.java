@@ -43,20 +43,34 @@ public class R2ObjectStorage implements DisposableBean {
      * @return the public URL of the stored object
      */
     public String upload(String objectKey, MultipartFile file) {
-        validateConfigured();
         try {
-            s3Client().putObject(
-                    PutObjectRequest.builder()
-                            .bucket(properties.getBucket())
-                            .key(objectKey)
-                            .contentType(file.getContentType())
-                            // Keys are UUID-unique and never rewritten; cache forever.
-                            .cacheControl("public, max-age=31536000, immutable")
-                            .build(),
-                    RequestBody.fromBytes(file.getBytes()));
+            return upload(objectKey, file.getBytes(), file.getContentType());
         } catch (IOException ex) {
             throw new ApiException("上传失败: " + ex.getMessage(), 500);
         }
+    }
+
+    /**
+     * Uploads raw bytes under the given key and returns its public URL. Lets callers
+     * store content they produced in memory (e.g. a compressed image) rather than a
+     * {@link MultipartFile}.
+     *
+     * @param objectKey   the fully built object key
+     * @param bytes       the object content
+     * @param contentType the object's content type, e.g. "image/jpeg"
+     * @return the public URL of the stored object
+     */
+    public String upload(String objectKey, byte[] bytes, String contentType) {
+        validateConfigured();
+        s3Client().putObject(
+                PutObjectRequest.builder()
+                        .bucket(properties.getBucket())
+                        .key(objectKey)
+                        .contentType(contentType)
+                        // Keys are UUID-unique and never rewritten; cache forever.
+                        .cacheControl("public, max-age=31536000, immutable")
+                        .build(),
+                RequestBody.fromBytes(bytes));
         return buildPublicUrl(objectKey);
     }
 

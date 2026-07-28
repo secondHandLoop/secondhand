@@ -25,6 +25,8 @@ import com.secondhand.note.service.NoteEditService;
 import com.secondhand.note.service.NoteListService;
 import com.secondhand.note.service.NoteEmbeddingService;
 import com.secondhand.note.service.PhotoAnalyzeService;
+import com.secondhand.note.service.PhotoGroupService;
+import com.secondhand.note.dto.PhotoGroupResponse;
 import com.secondhand.note.service.ManagerNoteDetailService;
 import com.secondhand.note.service.ManagerNoteListService;
 import com.secondhand.note.service.NotePhotoStorageService;
@@ -77,6 +79,7 @@ public class NoteController {
     private final HistoryDeleteService historyDeleteService;
     private final HistoryListService historyListService;
     private final PhotoAnalyzeService photoAnalyzeService;
+    private final PhotoGroupService photoGroupService;
     private final NoteEmbeddingService noteEmbeddingService;
 
     public NoteController(RequestUserIdResolver userIdResolver,
@@ -95,6 +98,7 @@ public class NoteController {
                           HistoryDeleteService historyDeleteService,
                           HistoryListService historyListService,
                           PhotoAnalyzeService photoAnalyzeService,
+                          PhotoGroupService photoGroupService,
                           NoteEmbeddingService noteEmbeddingService) {
         this.userIdResolver = userIdResolver;
         this.noteAddService = noteAddService;
@@ -112,6 +116,7 @@ public class NoteController {
         this.historyDeleteService = historyDeleteService;
         this.historyListService = historyListService;
         this.photoAnalyzeService = photoAnalyzeService;
+        this.photoGroupService = photoGroupService;
         this.noteEmbeddingService = noteEmbeddingService;
     }
 
@@ -143,7 +148,8 @@ public class NoteController {
         return noteListService.listNotes(query.getPage(), query.getLimit(), currentUserId, query.getKeyword(),
                 query.getTopCategory(), query.getDelivery(), query.getMyNotes(), query.getExplore(),
                 query.getInterestCategories(), query.getNearby(), query.getUserLat(), query.getUserLng(),
-                query.getUserCity(), query.getUserState(), query.getUserZipcode());
+                query.getUserCity(), query.getUserState(), query.getUserZipcode(),
+                query.getRadiusMiles(), query.getSort());
     }
 
     @Operation(summary = "Analyze a listing photo",
@@ -159,6 +165,21 @@ public class NoteController {
             @RequestParam("photo") MultipartFile photo) {
         userIdResolver.requireUserId(authorizationHeader);
         return photoAnalyzeService.analyze(photo);
+    }
+
+    @Operation(summary = "Group photos by item",
+            description = "Groups a batch of uploaded photos by physical item so bulk listing creation can turn each group into one draft.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Photos grouped successfully.", useReturnTypeSchema = true),
+            @ApiResponse(responseCode = "400", description = "The uploaded files are invalid.", content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+            @ApiResponse(responseCode = "503", description = "Image identification is not enabled.", content = @Content(schema = @Schema(implementation = ApiErrorResponse.class)))
+    })
+    @PostMapping(value = "/notes/group-photos", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public com.secondhand.common.output.ApiResponse<PhotoGroupResponse> groupPhotos(
+            @RequestHeader("Authorization") String authorizationHeader,
+            @RequestParam("photos") List<MultipartFile> photos) {
+        userIdResolver.requireUserId(authorizationHeader);
+        return photoGroupService.group(photos);
     }
 
     @Operation(summary = "Backfill note embeddings",
@@ -240,7 +261,7 @@ public class NoteController {
         return noteAddService.addNote(currentUserId, request.getUsername(), request.getTitle(), request.getDescription(),
                 photoUrls, request.getState(), request.getCity(), request.getAddress(), request.getZipcode(),
                 request.getPrice(), request.getNoteStatus(), request.getTopCategory(), request.getNoteCondition(),
-                request.isDelivery());
+                request.isDelivery(), request.getAttributes());
     }
 
     @Operation(
@@ -266,7 +287,8 @@ public class NoteController {
 
     @Operation(
             summary = "Delete a note",
-            description = "Soft-deletes a note owned by the authenticated user and removes its stored photos."
+            description = "Permanently deletes a note owned by the authenticated user, along with any "
+                    + "collections and browsing history referencing it and its stored photos."
     )
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Note deleted successfully.", useReturnTypeSchema = true),

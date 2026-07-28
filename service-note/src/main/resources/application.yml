@@ -7,7 +7,7 @@ spring:
       max-file-size: 10MB
       max-request-size: 30MB
   datasource:
-    url: jdbc:postgresql://localhost:5432/secondhand?currentSchema=note_svc
+    url: jdbc:postgresql://localhost:5432/secondhand?currentSchema=note_svc,public
     username: postgres
     password: postgres
   jpa:
@@ -44,6 +44,16 @@ ai:
     enabled: ${AI_GEMINI_ENABLED:false}
     api-key: ${GEMINI_API_KEY:}
     base-url: ${GEMINI_BASE_URL:https://generativelanguage.googleapis.com/v1beta}
-    vision-model: ${GEMINI_VISION_MODEL:gemini-2.5-flash-lite}
+    vision-model: ${GEMINI_VISION_MODEL:gemini-flash-lite-latest}
+    # Photo tagging needs no reasoning. Default = a 3.x flash-lite with thinking-level:
+    # minimal (the native 3.x knob). For a Gemini 2.5 model, blank thinking-level and
+    # set thinking-budget: 0 instead (2.5 rejects thinking-level).
+    thinking-level: ${GEMINI_THINKING_LEVEL:minimal}
+    thinking-budget: ${GEMINI_THINKING_BUDGET:0}
     embedding-model: ${GEMINI_EMBEDDING_MODEL:gemini-embedding-001}
     embedding-dimensions: ${GEMINI_EMBEDDING_DIMENSIONS:768}
+    # Longest-side cap (px) for vision inputs. 768 = one Gemini tile ≈ 258 image tokens.
+    # To MEASURE the savings: run analyze/group once at 768 (default), then again with
+    # GEMINI_AI_IMAGE_MAX_DIM=4096 (no downscale) and compare the logged prompt= tokens.
+    ai-image-max-dim: ${GEMINI_AI_IMAGE_MAX_DIM:768}
+    ai-image-quality: ${GEMINI_AI_IMAGE_QUALITY:0.85}

@@ -1,6 +1,7 @@
 package com.secondhand.user.service;
 
 import com.secondhand.common.entity.Status;
+import com.secondhand.common.geo.GeocodingService;
 import com.secondhand.common.tool.AssertUtil;
 import com.secondhand.common.output.ApiResponse;
 import com.secondhand.user.entity.Address;
@@ -19,6 +20,9 @@ public class AddressEditService {
 
     @Resource
     private AddressRepository addressRepository;
+
+    @Resource
+    private GeocodingService geocodingService;
 
     /**
      * Applies partial updates to an address after validating ownership and status.
@@ -59,11 +63,26 @@ public class AddressEditService {
             addr.setIsDefault(false);
         }
 
+        boolean locationChanged = state != null || city != null || address != null || zipcode != null;
         if (state != null) addr.setState(state);
         if (city != null) addr.setCity(city);
         if (address != null) addr.setAddress(address);
         if (zipcode != null) addr.setZipcode(zipcode);
         if (phone != null) addr.setPhone(phone);
+
+        // Re-geocode when any location field changed so the stored coordinates stay
+        // in sync with the (possibly edited) address. Best-effort; nulls on a miss.
+        if (locationChanged) {
+            GeocodingService.LatLng ll = geocodingService.geocode(
+                    addr.getState(), addr.getCity(), addr.getAddress(),
+                    addr.getZipcode() == null ? null : String.valueOf(addr.getZipcode()));
+            // Only overwrite on a successful geocode, so a transient Nominatim failure
+            // (429/timeout) doesn't wipe previously-good coordinates.
+            if (ll != null) {
+                addr.setLatitude(ll.getLat());
+                addr.setLongitude(ll.getLng());
+            }
+        }
 
         addr.setUpdateAt(System.currentTimeMillis() / 1000);
 

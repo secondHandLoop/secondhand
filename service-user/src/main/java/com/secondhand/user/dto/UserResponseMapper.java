@@ -20,6 +20,8 @@ public final class UserResponseMapper {
         response.setAddress(source.getAddress());
         response.setZipcode(source.getZipcode());
         response.setPhone(source.getPhone());
+        response.setLatitude(source.getLatitude());
+        response.setLongitude(source.getLongitude());
         response.setStatus(source.getStatus());
         response.setCreateAt(source.getCreateAt());
         response.setUpdateAt(source.getUpdateAt());
